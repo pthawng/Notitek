@@ -47,7 +47,9 @@ SuperShip Shop và giao diện nội bộ là điểm tích hợp ưu tiên. Cli
 | Ngân sách | Bên sở hữu ngân sách cần chốt tại DEC-08 | Chỉ thực thi điều kiện được giao; không tự tính sổ sách tài chính. |
 | Hành động trong thông báo | User/Order kiểm tra quyền và thực hiện | Dẫn tới đúng chức năng; trạng thái đọc không hoàn tất nghiệp vụ. |
 
-## 4 Các quyết định còn mở theo từng lát cắt
+## 4 Các quyết định theo từng lát cắt
+
+Ngày 08/10/2026, PO đã chốt cả 12 DEC dưới đây tại [Quyết định PO cho các DEC](<Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>). Bảng giữ nội dung câu hỏi và phần bị chặn để truy vết; các điểm cần pháp chế, tài chính, Tech Lead nguồn hoặc vận hành ký được theo dõi tại mục 4 tài liệu đó và chỉ chặn nghiệm thu phần liên quan.
 
 | BRD DEC | Nội dung cần đầu ra cụ thể | Bên chịu trách nhiệm | Phần bị chặn |
 |---|---|---|---|

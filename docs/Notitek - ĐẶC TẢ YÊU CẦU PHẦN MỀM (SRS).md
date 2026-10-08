@@ -1,6 +1,6 @@
 # Notitek - ĐẶC TẢ YÊU CẦU PHẦN MỀM (SRS)
 
-**Phiên bản:** 1.0 — baseline nghiệp vụ sau PO review.
+**Phiên bản:** 1.1 — baseline nghiệp vụ sau PO review, kèm giá trị tham số PO đã chốt.
 **Ngày:** 08/10/2026.
 **Chủ trì:** PO/BA Notification; phối hợp User, Order, User/Authorization, chủ ứng dụng, vận hành và QA.
 **Trạng thái:** Đã PO review và chốt nội dung yêu cầu nghiệp vụ trong vai trò PO được giao. Giá trị định lượng và đầu ra tích hợp cần bên sở hữu xác nhận được quản lý riêng tại mục 11; chưa ghi nhận nghiệm thu phần mềm.
@@ -29,6 +29,7 @@ SRS này đặc tả hành vi phần mềm quan sát và kiểm chứng được
 | 0.1 | Tóm tắt 14 nhóm chức năng và 7 nhóm phi chức năng. |
 | 0.2 | Viết lại từ nhu cầu của nguồn, người nhận và vận hành; phân rã hành vi, bổ sung giao diện ngoài, năm kênh, kết quả và tiêu chí kiểm chứng. |
 | 1.0 | Hoàn thành vòng PO review ngày 08/10/2026; sửa cửa sổ đồng bộ/bảo vệ dữ liệu chống trùng, đồng bộ UC–UX–hợp đồng–thiết kế–backlog và chốt baseline nghiệp vụ. |
+| 1.1 | Ngày 08/10/2026, PO chốt DEC-01 đến DEC-12 và giá trị khởi điểm SRS-P01 đến SRS-P12; mục 11 dẫn chiếu tài liệu Quyết định PO cho các DEC. Không đổi yêu cầu chức năng. |
 
 ### 1.3. Các từ dùng trong tích hợp
 
@@ -721,22 +722,22 @@ Các yêu cầu định tính dưới đây bắt buộc trong đợt đầu. M�
 
 ### 11.1. Bảng tham số định lượng
 
-“Chưa chốt” nghĩa là chưa có giá trị được xác nhận trong căn cứ hiện tại. Bản SRS chốt hành vi không tự tạo ra SLA, tải hay thời gian lưu. Mỗi giá trị được điền phải có đơn vị, phạm vi, môi trường/cửa sổ đo, người xác nhận và ngày.
+Ngày 08/10/2026, PO đã chốt giá trị khởi điểm cho cả 12 tham số tại mục 3 [Quyết định PO cho các DEC](<Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>). Đội dùng các giá trị đó để code, cấu hình và kiểm thử. Giá trị nào phụ thuộc bên sở hữu (pháp chế, tài chính, vận hành, Tech Lead nguồn) được ghi ở mục 4 của tài liệu đó và phải được ký trước khi nghiệm thu phần liên quan. Mỗi thay đổi giá trị phải có đơn vị, phạm vi, môi trường/cửa sổ đo, người xác nhận và ngày.
 
 | Mã | Tham số/đầu ra phải điền | Trạng thái | Chủ trì và người phối hợp | Phần bị chặn khi chưa có |
 |---|---|---|---|---|
-| SRS-P01 | Thời gian chờ phản hồi OTP; hạn bắt đầu/xử lý lần gửi; p95/p99 và tỷ lệ được phép vượt | Chưa chốt giá trị | User + Notification + vận hành | SLA và hợp đồng đồng bộ R1-OTP. |
-| SRS-P02 | Hạn gửi từng luồng; thời điểm bắt đầu nếu hẹn; mức bằng chứng phải đạt trong hạn | Chưa chốt theo luồng | PO nguồn + Notification | Lịch gửi và nghiệm thu hạn/giá trị tin thật. |
-| SRS-P03 | Độ trễ mục tiêu từng đoạn và từng luồng; trung bình/đỉnh/burst, cơ cấu tải | Chưa chốt | PO nguồn + Tech Lead + vận hành | Nghiệm thu hiệu năng/tải. |
-| SRS-P04 | Số người/đích/kênh mỗi yêu cầu; kích thước payload/biến; giới hạn trang/cursor | Chưa chốt | Tech Lead + consumer + frontend | Schema giới hạn và tải hộp tin. |
-| SRS-P05 | Rate-limit nguồn/provider, mức ưu tiên, thời gian chờ và cách hạn chế tải | Chưa chốt | Vận hành + Tech Lead + PO | Điều phối dưới tải và giới hạn kênh thực. |
-| SRS-P06 | Max attempts, khoảng chờ, cửa sổ retry/đối chiếu, điều kiện fallback theo kênh | Chưa chốt | Notification + PO nguồn + provider/vận hành | Gửi thật có retry/fallback. |
-| SRS-P07 | Cửa sổ chống trùng, giữ dấu hủy, giữ ID kết quả; replay ngoài cửa sổ | Chưa chốt | Nguồn + Notification + chủ dữ liệu | Replay, chuyển đổi và chính sách xóa liên quan. |
-| SRS-P08 | Mô hình lỗi, RPO/RTO, mục tiêu khả dụng và kế hoạch phục hồi backlog | Chưa chốt | Tech Lead + vận hành | Gate phục hồi/khả dụng. |
-| SRS-P09 | Thời gian lưu/xóa từng loại dữ liệu; backup, audit, quyền xuất và xóa | Chưa chốt | Chủ dữ liệu + PO + vận hành | Lưu dữ liệu thật và xuất lịch sử. |
-| SRS-P10 | p95/p99 tải danh sách/chi tiết/tra cứu dưới dữ liệu/tải cụ thể | Chưa chốt | PO UX + Tech Lead + vận hành | Nghiệm thu đáp ứng hộp tin/tra cứu. |
-| SRS-P11 | Độ mới căn cứ quyền/người nhận/đích Push; độ trễ nhận thu hồi và xử lý mất nguồn | Chưa chốt | User/Authorization + chủ thiết bị + Notification | Gửi nền, Push và kiểm tra dữ liệu cập nhật. |
-| SRS-P12 | Chủ ngân sách, đơn vị chịu phí, căn cứ cấp phép/hạn mức và xử lý chưa rõ | Chưa chốt | Chủ ngân sách + PO + Tech Lead | Kênh phát sinh phí. |
+| SRS-P01 | Thời gian chờ phản hồi OTP; hạn bắt đầu/xử lý lần gửi; p95/p99 và tỷ lệ được phép vượt | PO đã chốt giá trị khởi điểm | User + Notification + vận hành | SLA và hợp đồng đồng bộ R1-OTP. |
+| SRS-P02 | Hạn gửi từng luồng; thời điểm bắt đầu nếu hẹn; mức bằng chứng phải đạt trong hạn | PO đã chốt giá trị khởi điểm | PO nguồn + Notification | Lịch gửi và nghiệm thu hạn/giá trị tin thật. |
+| SRS-P03 | Độ trễ mục tiêu từng đoạn và từng luồng; trung bình/đỉnh/burst, cơ cấu tải | PO đã chốt giá trị khởi điểm | PO nguồn + Tech Lead + vận hành | Nghiệm thu hiệu năng/tải. |
+| SRS-P04 | Số người/đích/kênh mỗi yêu cầu; kích thước payload/biến; giới hạn trang/cursor | PO đã chốt giá trị khởi điểm | Tech Lead + consumer + frontend | Schema giới hạn và tải hộp tin. |
+| SRS-P05 | Rate-limit nguồn/provider, mức ưu tiên, thời gian chờ và cách hạn chế tải | PO đã chốt giá trị khởi điểm | Vận hành + Tech Lead + PO | Điều phối dưới tải và giới hạn kênh thực. |
+| SRS-P06 | Max attempts, khoảng chờ, cửa sổ retry/đối chiếu, điều kiện fallback theo kênh | PO đã chốt giá trị khởi điểm | Notification + PO nguồn + provider/vận hành | Gửi thật có retry/fallback. |
+| SRS-P07 | Cửa sổ chống trùng, giữ dấu hủy, giữ ID kết quả; replay ngoài cửa sổ | PO đã chốt giá trị khởi điểm | Nguồn + Notification + chủ dữ liệu | Replay, chuyển đổi và chính sách xóa liên quan. |
+| SRS-P08 | Mô hình lỗi, RPO/RTO, mục tiêu khả dụng và kế hoạch phục hồi backlog | PO đã chốt giá trị khởi điểm | Tech Lead + vận hành | Gate phục hồi/khả dụng. |
+| SRS-P09 | Thời gian lưu/xóa từng loại dữ liệu; backup, audit, quyền xuất và xóa | PO đã chốt giá trị khởi điểm | Chủ dữ liệu + PO + vận hành | Lưu dữ liệu thật và xuất lịch sử. |
+| SRS-P10 | p95/p99 tải danh sách/chi tiết/tra cứu dưới dữ liệu/tải cụ thể | PO đã chốt giá trị khởi điểm | PO UX + Tech Lead + vận hành | Nghiệm thu đáp ứng hộp tin/tra cứu. |
+| SRS-P11 | Độ mới căn cứ quyền/người nhận/đích Push; độ trễ nhận thu hồi và xử lý mất nguồn | PO đã chốt giá trị khởi điểm | User/Authorization + chủ thiết bị + Notification | Gửi nền, Push và kiểm tra dữ liệu cập nhật. |
+| SRS-P12 | Chủ ngân sách, đơn vị chịu phí, căn cứ cấp phép/hạn mức và xử lý chưa rõ | PO đã chốt giá trị khởi điểm | Chủ ngân sách + PO + Tech Lead | Kênh phát sinh phí. |
 
 ### 11.2. Quyết định nghiệp vụ/tích hợp còn cần đầu ra
 
@@ -755,7 +756,7 @@ Các yêu cầu định tính dưới đây bắt buộc trong đợt đầu. M�
 | DEC-11 | Chuyển đổi có điểm bàn giao, đối chiếu và khôi phục | Kiểm kê ZNS cũ, mẫu/định danh, tập luồng và thời điểm bật thật. |
 | DEC-12 | Hành động có quyền riêng; ALLOW đúng tài nguyên | Catalog action/resource/scope, người được cấp và contract tests User/Authorization. |
 
-Các giá trị/đầu ra này chặn phần tương ứng. Có thể làm hợp đồng, thiết kế và kiểm thử phần không phụ thuộc chúng; không coi toàn bộ SRS chưa có giá trị khi một provider chưa được chọn.
+PO đã chốt kết quả cho cả 12 DEC tại [Quyết định PO cho các DEC](<Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>); cột "Đầu ra còn cần chốt" nay là các artifact kỹ thuật (schema, ADR, contract test) và xác nhận của bên sở hữu tại mục 4 tài liệu đó. Các giá trị/đầu ra này chặn phần tương ứng. Có thể làm hợp đồng, thiết kế và kiểm thử phần không phụ thuộc chúng; không coi toàn bộ SRS chưa có giá trị khi một provider chưa được chọn.
 
 ## 12. Truy vết và tiêu chí nghiệm thu
 

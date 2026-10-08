@@ -1,7 +1,7 @@
 # Notitek - ĐẶC TẢ YÊU CẦU NGHIỆP VỤ (BRD)
 
-**Phiên bản:** 0.5 - chốt định hướng sản phẩm và các lát cắt đợt đầu ngày 08/10/2026.  
-**Trạng thái:** Phạm vi sản phẩm đợt đầu đã xác nhận: đủ 5 kênh, OTP, lời mời nhân viên/thành viên, giao thất bại và cảnh báo bảo mật/thiết bị; tiếp nối trải nghiệm Shop và nội bộ. Hợp đồng tích hợp, client Push, chính sách chi tiết và thông số nghiệm thu còn cần chốt theo từng phần.  
+**Phiên bản:** 0.6 - chốt định hướng sản phẩm, các lát cắt đợt đầu và DEC-01 đến DEC-12 ngày 08/10/2026.  
+**Trạng thái:** Phạm vi sản phẩm đợt đầu đã xác nhận: đủ 5 kênh, OTP, lời mời nhân viên/thành viên, giao thất bại và cảnh báo bảo mật/thiết bị; tiếp nối trải nghiệm Shop và nội bộ. Các DEC và thông số khởi điểm đã được PO chốt tại docs/Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md; schema hợp đồng và một số xác nhận của bên sở hữu còn cần hoàn thiện.  
 **Đối tượng đọc:** Chủ nghiệp vụ, người dùng, quản trị viên, nhóm User/Order/các module nguồn, BA, phát triển và kiểm thử.
 
 Tài liệu mô tả người dùng cần gì và các module phải phối hợp thế nào. API, cấu trúc event, cơ chế xử lý và công nghệ được đặc tả trong SRS sau khi các quyết định nghiệp vụ liên quan được chốt.
@@ -32,6 +32,7 @@ Một use case có thể cần nhiều nhóm BR. Đợt đầu đã xác nhận 
 | 0.3 | 06/10/2026 | Đối chiếu Application, Membership, Entitlement và Access Context của User; tham khảo mô hình Novu; bổ sung cách cấu hình luồng, dữ liệu người nhận và app đích, dẫn chiếu phân quyền dùng chung. |
 | 0.4 | 06/10/2026 | Chuẩn hóa tên gọi các thành phần theo nghiệp vụ SPF; giữ nguyên mô hình, chức năng, phạm vi và mã BR/UC/AC. |
 | 0.5 | 08/10/2026 | Người yêu cầu chốt định hướng PO và các lát cắt OTP, lời mời, giao thất bại, cảnh báo thiết bị; giữ 5 kênh, tách ngữ cảnh tài khoản/công việc, làm rõ ranh giới nguồn và Notification. Bổ sung UC-USR-09 và bộ tài liệu xuống triển khai; lưu bản 0.4 tại thời điểm chốt phạm vi. |
+| 0.6 | 08/10/2026 | PO chốt DEC-01 đến DEC-12 và giá trị khởi điểm SRS-P01 đến SRS-P12 tại tài liệu Quyết định PO cho các DEC; mục 11 dẫn chiếu kết quả, giữ câu hỏi gốc. |
 
 ## 2. Bối cảnh, mục tiêu và căn cứ
 
@@ -535,7 +536,7 @@ Mục tiêu tốc độ phản hồi OTP, độ trễ tin giao dịch, sản lư
 
 ## 11. Quyết định cần chốt trước đặc tả/triển khai
 
-DEC-01 đã **chốt 5 kênh và các lát cắt đợt đầu** ngày 08/10/2026; client Push cụ thể và app mở rộng còn mở. Các DEC khác cần chốt theo phần phụ thuộc; ranh giới nguồn sở hữu nghiệp vụ và việc tiếp nối hộp tin đã được xác nhận. Người phụ trách là nhóm trách nhiệm cần phân công.
+DEC-01 đã **chốt 5 kênh và các lát cắt đợt đầu** ngày 08/10/2026. Cũng ngày 08/10/2026, **PO đã chốt DEC-01 đến DEC-12** cho đợt đầu tại [Quyết định PO cho các DEC](<docs/Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>); các điểm thuộc thẩm quyền pháp chế, tài chính, Tech Lead và vận hành được ghi là chờ xác nhận tại mục 4 của tài liệu đó. Bảng dưới giữ nguyên câu hỏi gốc để truy vết.
 
 | Mã | Câu hỏi cần quyết định | Bên chủ trì | Phạm vi bị ảnh hưởng |
 |---|---|---|---|
