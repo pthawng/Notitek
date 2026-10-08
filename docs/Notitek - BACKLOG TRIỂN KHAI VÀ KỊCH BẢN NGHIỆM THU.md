@@ -1,6 +1,6 @@
 # Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU
 
-**Phiên bản:** 0.1. **Ngày:** 08/10/2026. **Chủ trì:** PO cùng Tech Lead và QA.
+**Phiên bản:** 0.2. **Ngày:** 08/10/2026. **Chủ trì:** PO cùng Tech Lead và QA.
 
 Backlog tổ chức theo các lát cắt đã chốt trong [phạm vi](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>). Story có bên chịu trách nhiệm, phụ thuộc và kết quả nghiệm thu; đội tách task code/kiểm thử sau khi chốt hợp đồng và thiết kế. Không gán lịch sprint hoặc effort trước khi đội xác nhận năng lực và phụ thuộc.
 
@@ -26,22 +26,22 @@ ST-11 được tách theo lát cắt, không là công việc làm hết kiến 
 
 ## 2 Ma trận truy vết cho đợt đầu
 
-Bảng liên kết phần được chọn, không tuyên bố đã nghiệm thu toàn bộ BRD dài hạn. Mã BR/SRS rút gọn với dấu slash giữ nguyên tiền tố của mục đầu.
+Bảng đồng bộ với SRS 1.0 sau PO review; liên kết phần được chọn, không tuyên bố đã nghiệm thu toàn bộ BRD dài hạn. Mã BR/SRS rút gọn với dấu slash giữ nguyên tiền tố của mục đầu.
 
 | Story | UC | BR chính | SRS | UX | AT |
 |---|---|---|---|---|---|
-| ST-01 | UC-NTF-15, UC-NTF-04/07/08 | BR-CAT-04, BR-TPL-01/03, BR-CFG-01/02/03/05 | SRS-F03/04/12 | UX-05 | AT-17/18 |
-| ST-02 | UC-USR-01, UC-NTF-02/03/09/10/11 | BR-INT-02/05, BR-TRG-02/05, BR-TIME-01/02, BR-SEC-01/05, BR-OPS-04 | SRS-F01/02/03/04/06/07/09/13/14 | Theo UI User hiện có | AT-01/02/03/04/19 |
-| ST-03 | UC-USR-03/04 | BR-INT-01/03/05, BR-REC-01/03, BR-TPL-01/02/03/05, BR-CHN-08 | SRS-F01/02/04/05/06/07/09/13 | Theo UI lời mời hiện có | AT-02/03/05/06/07/08 |
-| ST-04 | UC-ORD-05, UC-NTF-01/03/10 | BR-INT-01/05, BR-TRG-01/02/03/05, BR-TIME-02 | SRS-F01/02/05/06 | Theo UI Order hiện có | AT-02/09/10 |
-| ST-05 | UC-ORD-05, UC-NTF-13 | BR-CHN-05, BR-REC-03/04, BR-SEC-03/06, BR-CFG-05 | SRS-F05/08 | UX-01/02 | AT-08/11/15 |
-| ST-06 | UC-ORD-05, UC-NTF-08/09 | BR-CHN-06/09, BR-CFG-05 | SRS-F05/07/09 | UX-01/02 | AT-11/12 |
-| ST-07 | UC-ORD-05, UC-NTF-08/09 | BR-CHN-03/04/07/09, BR-REC-01, BR-COST-01/03 | SRS-F05/07/09/14 | Nội dung kênh ngoài | AT-09/11/19 |
-| ST-08 | UC-USR-09, UC-NTF-13 | BR-INT-01/06, BR-REC-03/06, BR-CHN-05, BR-SEC-03/06 | SRS-F05/08/10/13 | UX-01/03 | AT-03/08/13/14/15 |
-| ST-09 | UC-NTF-12 | BR-INT-04, BR-OPS-01/04, BR-SEC-01/02/04/05/06 | SRS-F09/11/13 | UX-04 | AT-03/16/17 |
-| ST-10 | UC-ORD-05 và luồng cũ được chọn chuyển đổi | BR-TRG-02, BR-OPS-04 | SRS-F02/09 | Không yêu cầu UI riêng | AT-20 |
-| ST-11 | Các UC của lát cắt tương ứng | BR-INT-04/06, BR-CFG-05 | SRS-F01 đến SRS-F14 | UX-01 đến UX-05 khi liên quan | AT-01 đến AT-20 khi liên quan |
-| ST-12 | Các UC được chọn và UC-NTF-09/13 | BR-CHN-05/06/07/08/09, BR-OPS-04 | SRS-F01 đến SRS-F14, SRS-N01 đến SRS-N07 | UX-01 đến UX-04 | AT-01 đến AT-20; AC-17 BRD |
+| ST-01 | UC-NTF-15, UC-NTF-04/07/08 | BR-CAT-04, BR-TPL-01/03, BR-CFG-01/02/03/05 | SRS-F03/04/12/15/20/21 | UX-05 | AT-17/18/24/27 |
+| ST-02 | UC-USR-01, UC-NTF-02/03/09/10/11 | BR-INT-02/05, BR-TRG-02/05, BR-TIME-01/02, BR-SEC-01/05, BR-OPS-04 | SRS-F01/02/03/04/05/06/07/09/13/14/15/18/20/21 | Theo UI User hiện có | AT-01/02/03/04/19/21/22/23/28 |
+| ST-03 | UC-USR-03/04 | BR-INT-01/03/05, BR-REC-01/03, BR-TPL-01/02/03/05, BR-CHN-08 | SRS-F01/02/04/05/06/07/09/13/14/15/17/20 | Theo UI lời mời hiện có | AT-02/03/05/06/07/08/21/24/28 |
+| ST-04 | UC-ORD-05, UC-NTF-01/03/10 | BR-INT-01/05, BR-TRG-01/02/03/05, BR-TIME-02 | SRS-F01/02/03/05/06/09 | Theo UI Order hiện có | AT-02/09/10/21/22/23 |
+| ST-05 | UC-ORD-05, UC-NTF-13 | BR-CHN-05, BR-REC-03/04, BR-SEC-03/06, BR-CFG-05 | SRS-F05/08/09/13 | UX-01/02 | AT-08/11/15/21/25/26 |
+| ST-06 | UC-ORD-05, UC-NTF-08/09 | BR-CHN-06/09, BR-CFG-05 | SRS-F05/07/09/13/15/16/21 | UX-01/02 | AT-11/12/24/25/26/27 |
+| ST-07 | UC-ORD-05, UC-NTF-08/09 | BR-CHN-03/04/07/09, BR-REC-01, BR-COST-01/03 | SRS-F05/07/09/13/14/15/18/19/20/21 | Nội dung kênh ngoài | AT-09/11/19/24/25 |
+| ST-08 | UC-USR-09, UC-NTF-13 | BR-INT-01/06, BR-REC-03/06, BR-CHN-05, BR-SEC-03/06 | SRS-F02/05/08/09/10/13/22 | UX-01/03 | AT-03/08/13/14/15/21/26/28 |
+| ST-09 | UC-NTF-12 | BR-INT-04, BR-OPS-01/04, BR-SEC-01/02/04/05/06 | SRS-F09/11/12/13/14/15/21 | UX-04 | AT-03/16/17/18/19/25/27/28 |
+| ST-10 | UC-ORD-05 và luồng cũ được chọn chuyển đổi | BR-TRG-02, BR-OPS-04 | SRS-F02/09/10/22 | Không yêu cầu UI riêng | AT-14/20/23 |
+| ST-11 | Các UC của lát cắt tương ứng | BR-INT-04/06, BR-CFG-05 | SRS-F01 đến SRS-F22; SRS-N01 đến SRS-N07 khi liên quan | UX-01 đến UX-05 khi liên quan | AT-01 đến AT-28 khi liên quan |
+| ST-12 | Các UC được chọn và UC-NTF-09/13 | BR-CHN-05/06/07/08/09, BR-OPS-04 | SRS-F01 đến SRS-F22, SRS-N01 đến SRS-N07 | UX-01 đến UX-04 | AT-01 đến AT-28; AC-17 BRD |
 | ST-13 | Các UC nghiệp vụ được chọn | BR-OPS-01, BR-INT-01 | SRS-F09, SRS-N07 | Không yêu cầu dashboard riêng | Chỉ số theo phạm vi; nguồn xác nhận kết quả nghiệp vụ |
 
 ## 3 Các kịch bản nghiệm thu
@@ -56,7 +56,7 @@ AT là kịch bản của đợt đầu, bổ sung và cụ thể hóa AC trong 
 | AT-04 | OTP hết hạn gửi, timeout, phản hồi muộn hoặc User cấp lại | Notification tuân thủ chỉ dẫn gửi/thử lại/hủy; User quyết định hiệu lực mã; không tự báo thành công khi chưa có bằng chứng | AC-06/07/08 |
 | AT-05 | Lời mời đã commit được gửi và mở link | Email thực và link đúng User/lời mời; kết quả gửi tách kết quả chấp nhận | AC-01/17 |
 | AT-06 | Lời mời đã dùng/thu hồi/cấp lại hoặc gửi lỗi | Gửi lỗi không đảo commit; bản chờ dừng theo chỉ dẫn/hạn; không tự tạo membership | AC-07 |
-| AT-07 | Email bị trả lại hoặc một đích gửi lỗi | Ghi kết quả theo bằng chứng; không báo giao/đọc chỉ từ tiếp nhận | AC-08/09 |
+| AT-07 | Email bị trả lại, một đích lỗi hoặc các email cá nhân hóa gửi cho nhiều người | Ghi kết quả theo bằng chứng; không báo giao/đọc chỉ từ tiếp nhận; không lộ địa chỉ/nội dung riêng của người nhận khác | AC-08/09 |
 | AT-08 | Một người có nhiều Shop, đổi Shop/tài khoản hoặc mất quyền | Công việc tách đúng scope; cảnh báo tài khoản không lộ sang tài khoản khác; link do nguồn kiểm tra | AC-04/13/19 |
 | AT-09 | Order xác nhận giao thất bại; ZNS timeout hoặc lỗi đủ điều kiện dự phòng | Dùng sự việc và dữ liệu nguồn; timeout giữ chưa rõ; SMS chỉ theo điều kiện đã chốt | AC-05/08/09 |
 | AT-10 | Event trễ/sai thứ tự; Order hủy yêu cầu chờ | Theo sự việc/reference/chỉ dẫn nguồn; dừng phần kiểm soát được; không hứa thu hồi tin ngoài | AC-07 |
@@ -70,8 +70,16 @@ AT là kịch bản của đợt đầu, bổ sung và cụ thể hóa AC trong 
 | AT-18 | Mẫu/cấu hình thay đổi, phạm vi xung đột, reference cũ có dữ liệu khác | Tra được phiên bản; không kích hoạt cấu hình xung đột; xử lý payload xung đột theo hợp đồng | AC-02/11/18 |
 | AT-19 | Điều kiện ngân sách không cho phép gửi | Bên sở hữu quyết định; Notification tuân thủ hợp đồng, có lý do và không báo thành công khi bị chặn | AC-12 |
 | AT-20 | Chuyển một luồng ZNS cũ sang mới và xử lý sự cố | Có điểm chuyển trách nhiệm; không bật hai nguồn gửi không kiểm soát; khôi phục theo kế hoạch đã kiểm chứng | AC-02/17 |
+| AT-21 | Nguồn trái scope, payload giả người/Shop/app; người biết ID tin người khác | Không kích hoạt/gửi hoặc trả nội dung ngoài quyền; danh sách và số đếm không lộ dữ liệu; backend yêu cầu căn cứ quyền đúng hành động/tài nguyên | AC-14/19 |
+| AT-22 | Lỗi trước/sau ghi nhận bền vững; mất phản hồi/phát lại; version không hỗ trợ và thêm trường tương thích | Trước ghi nhận không trả accepted; sau ghi nhận tra lại được, không mất/nhân công việc; version sai có lý do, thay đổi tương thích không làm consumer cũ lỗi; event Order có đường bàn giao thực | AC-01/02 |
+| AT-23 | Hai yêu cầu cùng khóa đồng thời, crash sau provider nhận; cửa sổ đồng bộ hết; hủy đến trước event | Không nhân tập bản tin, không retry mù quáng; không bắt đầu lần gửi OTP mới ngoài cửa sổ được phép; giữ dấu hủy theo hợp đồng hoặc báo rõ chưa hỗ trợ | AC-02/07/08 |
+| AT-24 | Kết nối sai scope/brand/môi trường; mẫu thiếu biến/biến có ký tự chèn; SMS dài; lựa chọn Marketing/luồng bắt buộc và liên hệ bị chặn an toàn | Không dùng cấu hình gần giống; dữ liệu không phá mẫu/cắt mất ý nghĩa; điều kiện kênh, mục đích và đích an toàn đúng chính sách; có lý do/version; thử không dùng tập khách production | AC-11/17/18 |
+| AT-25 | Nhiều người/kênh bắt buộc/tùy chọn/thay thế, nhiều đích Push một người; callback trễ/trùng/trái nhau; phát kết quả lỗi | Mục tiêu tính đúng tiêu chí; phần thiếu và chưa rõ hiện riêng; bằng chứng không bị ghi đè sai; phát lại kết quả không gửi lại tin người dùng | AC-08/09 |
+| AT-26 | Đọc cùng tin trên hai thiết bị, pagination; đổi quyền/ngữ cảnh; Push thu hồi rồi nhận bản đăng ký cũ | Trạng thái đọc backend nhất quán ở lần tải sau; danh sách/số đếm cùng scope; không dùng token cũ cho chủ/app khác; đọc không thực hiện nghiệp vụ | AC-13/16/19 |
+| AT-27 | Provider rate-limit, burst từ nguồn khác cùng OTP, dừng luồng/kênh, đổi credential; backup/restore | Giới hạn và ưu tiên theo cấu hình; accepted không mất; phần quá hạn có kết quả; phạm vi dừng/audit rõ; credential không lộ; NFR dùng giá trị đã duyệt | AC-12/17/18 |
+| AT-28 | Bí mật giả đi qua exception, trace, dead-letter, chống trùng, API hỗ trợ; đến hạn xóa và restore | Không có nguyên văn/dữ liệu dễ khôi phục bí mật ở nơi bị cấm; lưu/xóa từng loại đúng chính sách và quyền; tra cứu vẫn có metadata được phép | AC-14 |
 
-AT-10/12/18 bổ sung ca sai thứ tự và dữ liệu xung đột chưa có AC riêng trong BRD. Test về SLA/tải/lưu dữ liệu phải dùng giá trị SRS-N đã được duyệt và ghi môi trường đo.
+AT-10/12/18 bổ sung ca sai thứ tự và dữ liệu xung đột chưa có AC riêng trong BRD. AT-21 đến AT-28 bổ sung kiểm chứng theo SRS 1.0; QA phải tách từng tình huống thành test case, không coi một kết quả chung là đạt mọi yêu cầu con. Test về SLA/tải/lưu dữ liệu phải dùng giá trị SRS-N đã được duyệt và ghi môi trường đo.
 
 ## 4 Điều kiện bắt đầu code
 

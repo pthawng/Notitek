@@ -1,6 +1,6 @@
 # Notitek - HỢP ĐỒNG TÍCH HỢP API VÀ SỰ KIỆN
 
-**Phiên bản:** 0.1. **Ngày:** 08/10/2026. **Trạng thái:** Bản nháp ngữ nghĩa để Tech Lead các bên hoàn thiện.
+**Phiên bản:** 0.2. **Ngày:** 08/10/2026. **Trạng thái:** Bản nháp ngữ nghĩa để Tech Lead các bên hoàn thiện.
 
 Hợp đồng xác định nguồn cung cấp gì và Notification trả gì cho các lát cắt User/Order. Các tên trường dưới đây là mô hình dữ liệu để thống nhất ý nghĩa, chưa là tên API/event đã duyệt. OpenAPI/schema event và bộ ví dụ phải được chốt trước khi các bên tích hợp.
 
@@ -85,3 +85,22 @@ Tech Lead tạo OpenAPI cho các thao tác HTTP được chọn; schema event ch
 ## 7 Các quyết định liên quan
 
 DEC-01/02/03/05/06/07/08/09/10/12 ở [phạm vi](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>) điều khiển các phần hợp đồng tương ứng. Các bên có thể chốt hợp đồng của OTP/lời mời trước hợp đồng Order; đồng thời giữ thống nhất định danh, kết quả và quy tắc tương thích dùng chung.
+
+## 8 Đồng bộ với SRS 1.0 sau PO review
+
+[SRS](<Notitek - ĐẶC TẢ YÊU CẦU PHẦN MỀM (SRS).md>) chốt baseline hành vi. Hợp đồng này vẫn là ngữ nghĩa cần cụ thể hóa thành schema được consumer/provider xác nhận; bảng dưới là đầu ra bắt buộc cho phần liên quan, không tự tạo route hoặc event mới.
+
+| Phần hợp đồng | Nội dung phải thể hiện | SRS liên quan |
+|---|---|---|
+| Gửi đồng bộ | Mức bằng chứng cần trả, thời gian chờ và hạn bắt đầu/xử lý; khi hết cửa sổ không tự chuyển sang gửi nền; callback trễ chỉ cập nhật bằng chứng | SRS-F01.05, SRS-F07.08/09, SRS-N01 |
+| Chống trùng | Phạm vi khóa, dữ liệu có ý nghĩa được so, metadata được phép khác, xung đột, xử lý đồng thời và replay ngoài cửa sổ; bảo vệ dữ liệu đối chiếu bí mật | SRS-F02 |
+| Hủy | Tập mục tiêu/scope, ID lệnh, phần dừng/ra ngoài/chưa rõ; hỗ trợ hoặc phản hồi rõ hủy trước event; thời gian giữ dấu hủy | SRS-F06 |
+| Kết quả | Tách tiếp nhận, tiến trình, bằng chứng kênh, tiêu chí đạt và đọc; kết quả riêng theo người/kênh/lần thử, revision và ID thay đổi để phát lại | SRS-F09 |
+| Kênh/provider | Loại bằng chứng thật, callback tin cậy, mã lỗi, điều kiện retry/fallback, giới hạn và version kết nối; không coi HTTP thành công là đã giao | SRS-F07/15/17/18/19 |
+| Hộp tin | Loại ngữ cảnh, quyền hiện tại, phân trang/thứ tự, số chưa đọc cùng scope, ghi đọc idempotent ở backend và kết quả an toàn với ID trái quyền | SRS-F05/08, SRS-N05 |
+| Push | Chủ đăng ký/thu hồi, tài khoản–app/client–đích, version/độ mới, đổi chủ, token lỗi và chính sách đa đích; không dùng dữ liệu cũ hồi sinh token | SRS-F16 |
+| Phí | Bên quyết định, căn cứ cho từng lần thử/fallback, phạm vi cho phép, trạng thái chưa rõ và trách nhiệm giữ/giải phóng nếu có | SRS-F14 |
+| Bí mật và lưu dữ liệu | Phân loại trường, đường truyền/lưu/quan sát được phép, che dữ liệu, TTL theo loại, hàng lỗi và dữ liệu chống trùng | SRS-F02.07, SRS-F13, SRS-N06 |
+| Giới hạn/tương thích | Kích thước/tập nhận/tốc độ/phân trang, lỗi hạn chế tải, version và ví dụ consumer tests | SRS-F21, SRS-N03/07 |
+
+Mỗi lát cắt phải chốt phần hợp đồng cần dùng và các tham số SRS-P liên quan. Nguồn không được dùng kết quả gửi/đọc để tự kết luận đã hoàn tất nghiệp vụ nếu hợp đồng nghiệp vụ của nguồn không xác nhận.

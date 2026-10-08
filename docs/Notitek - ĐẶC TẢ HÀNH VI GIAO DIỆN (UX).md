@@ -1,6 +1,6 @@
 # Notitek - ĐẶC TẢ HÀNH VI GIAO DIỆN (UX)
 
-**Phiên bản:** 0.1. **Ngày:** 08/10/2026. **Trạng thái:** Đặc tả hành vi để PO, UX và frontend hoàn thiện.
+**Phiên bản:** 0.2. **Ngày:** 08/10/2026. **Trạng thái:** Đặc tả hành vi để PO, UX và frontend hoàn thiện.
 
 Trải nghiệm đợt đầu tiếp nối chuông thông báo Shop, phân biệt cảnh báo tài khoản và thông báo công việc, đồng thời cung cấp tra cứu cho vận hành. Các hành động nghiệp vụ tiếp tục do User/Order xử lý. Wireframe và hợp đồng dữ liệu cần hoàn thiện trước triển khai UI.
 
@@ -22,12 +22,14 @@ Backend kiểm tra quyền và ngữ cảnh. Giao diện dùng ngữ cảnh đ�
 
 UX-05 không tự yêu cầu xây trình thiết kế workflow hoặc trang quản trị đầy đủ ở đợt đầu. Nếu dùng cấu hình do vận hành quản lý, vẫn phải có quyền, phiên bản, kiểm tra và audit theo hợp đồng.
 
+Trạng thái đọc của In-app mới lấy backend làm nguồn sự thật theo SRS-F08.05; local cache chỉ hỗ trợ trình bày. Đánh dấu đọc được lưu theo người/bản tin và hiển thị ở lần tải sau trên thiết bị được phép khác; lỗi lưu phải có phản hồi, không tự báo thành công. Tin từ feed User cũ cần chính sách chuyển đọc riêng, không suy đã đọc từ việc yêu cầu bảo mật đã xử lý.
+
 ## 3 Trạng thái màn hình
 
 | Trạng thái | Danh sách/hộp tin | Chi tiết/hành động | Tra cứu vận hành |
 |---|---|---|---|
 | Đang tải | Hiển thị trạng thái tải, không dùng dữ liệu scope cũ | Giữ thông tin tải, chưa cho hành động khi thiếu điều kiện | Hiển thị tiến trình tải. |
-| Trống | Cho biết chưa có tin trong ngữ cảnh hiện tại | Không tự tạo nội dung giả | Phân biệt không tìm thấy với không có quyền. |
+| Trống | Cho biết chưa có tin trong ngữ cảnh hiện tại | Không tự tạo nội dung giả | Phản hồi an toàn khi không tìm thấy/không có quyền; không tiết lộ tin ngoài phạm vi. |
 | Lỗi tải | Lý do dễ hiểu và retry | Không báo hành động thành công khi chưa có phản hồi | Hiển thị lỗi tra cứu; không suy kết quả gửi. |
 | Mất quyền | Không lộ nội dung công việc; cập nhật theo kết quả backend | Nguồn từ chối hành động phù hợp | Từ chối đúng phạm vi; không mở rộng dữ liệu bằng quyền xem khác. |
 | Đã đọc | Bỏ đánh dấu chưa đọc theo trạng thái hộp tin | Không đổi đơn/yêu cầu bảo mật thành đã xử lý | Giữ đọc riêng với tiến trình kênh. |

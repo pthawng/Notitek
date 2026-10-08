@@ -1,6 +1,6 @@
 # Notitek - ĐẶC TẢ USE CASE ƯU TIÊN
 
-**Phiên bản:** 0.1. **Ngày:** 08/10/2026. **Chủ trì:** BA cùng PO Notification và PO module nguồn.
+**Phiên bản:** 0.2. **Ngày:** 08/10/2026. **Chủ trì:** BA cùng PO Notification và PO module nguồn.
 
 Các use case ưu tiên của đợt đầu dưới đây phân rã [phạm vi đã xác nhận](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>) thành actor, điều kiện, luồng chính, ngoại lệ và hậu điều kiện. Đây là đặc tả nghiệp vụ cho đợt đầu; schema, route và công nghệ thuộc [hợp đồng](<Notitek - HỢP ĐỒNG TÍCH HỢP API VÀ SỰ KIỆN.md>) và [thiết kế kỹ thuật](<Notitek - THIẾT KẾ KỸ THUẬT SƠ BỘ.md>).
 
@@ -31,7 +31,7 @@ Các use case ưu tiên của đợt đầu dưới đây phân rã [phạm vi �
 
 **Hậu điều kiện:** Có kết quả gửi có thể tra cứu; không chứa bí mật trong log/lịch sử/kết quả công khai; User vẫn sở hữu toàn bộ trạng thái xác thực.
 
-**Truy vết:** BR-INT-02/05, BR-TRG-02/05, BR-TIME-01/02, BR-SEC-01/05, BR-OPS-04; SRS-F01/02/03/04/06/07/09/13; story ST-02; AT-01/02/03/04. **DEC:** 02, 05, 06, 08, 09, 10.
+**Truy vết:** BR-INT-02/05, BR-TRG-02/05, BR-TIME-01/02, BR-SEC-01/05, BR-OPS-04; SRS-F01/02/03/04/06/07/09/13/14/15/18/21; story ST-02; AT-01/02/03/04/19/21/22/23/28. **DEC:** 02, 05, 06, 08, 09, 10.
 
 ## 3 Gửi lời mời nhân viên vào tổ chức
 
@@ -108,11 +108,11 @@ Các use case ưu tiên của đợt đầu dưới đây phân rã [phạm vi �
 
 **Tiền điều kiện:** Người dùng và ngữ cảnh được backend xác nhận; quyền hành động phù hợp. **Luồng chính:** Tải danh sách và số chưa đọc trong phạm vi; mở/đánh dấu đọc; ghi trạng thái đọc; mở liên kết do nguồn cung cấp và để nguồn kiểm tra quyền hành động.
 
-**Ngoại lệ:** Mất quyền không lộ nội dung công việc cũ; giả mạo người/app/Shop bị từ chối; tải lỗi có retry; đổi ngữ cảnh cập nhật danh sách đúng phạm vi. Cảnh báo tài khoản được xác định riêng, không bị gắn mặc định vào Shop đang mở. Việc đồng bộ trạng thái đọc giữa thiết bị được Tech Lead đặc tả, không dùng trạng thái yêu cầu bảo mật thay thế.
+**Ngoại lệ:** Mất quyền không lộ nội dung công việc cũ; giả mạo người/app/Shop bị từ chối; tải lỗi có retry; đổi ngữ cảnh cập nhật danh sách đúng phạm vi. Cảnh báo tài khoản được xác định riêng, không bị gắn mặc định vào Shop đang mở. Trạng thái đọc của In-app mới được lưu ở backend và thấy ở lần tải sau trên thiết bị được phép khác theo SRS-F08.05; Tech Lead đặc tả cơ chế, không dùng trạng thái yêu cầu bảo mật thay thế.
 
 **Hậu điều kiện:** Đọc tin không hoàn thành nghiệp vụ; trạng thái đọc tách kết quả gửi từng kênh.
 
-**Truy vết:** BR-CHN-05, BR-REC-03/04, BR-SEC-03/06, BR-CFG-05; SRS-F05/08/10; ST-05/08; AT-08/13/14/15. **DEC:** 03, 09, 12.
+**Truy vết:** BR-CHN-05, BR-REC-03/04, BR-SEC-03/06, BR-CFG-05; SRS-F05/08/10; ST-05/08; AT-08/13/14/15/21/26. **DEC:** 03, 09, 12.
 
 ## 8 Tra cứu vận hành
 

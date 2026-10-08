@@ -1,6 +1,6 @@
 # Notitek - THIẾT KẾ KỸ THUẬT SƠ BỘ
 
-**Phiên bản:** 0.1. **Ngày:** 08/10/2026. **Trạng thái:** Mô hình logic và hạng mục thiết kế để Tech Lead chốt.
+**Phiên bản:** 0.2. **Ngày:** 08/10/2026. **Trạng thái:** Mô hình logic và hạng mục thiết kế để Tech Lead chốt.
 
 Thiết kế hiện xác định ranh giới xử lý và dữ liệu cần giải thích các use case. Nó chưa chọn stack, engine điều phối, nhà cung cấp, broker, schema vật lý hoặc kiến trúc triển khai. Tech Lead hoàn thiện các quyết định dưới đây từ [SRS](<Notitek - ĐẶC TẢ YÊU CẦU PHẦN MỀM (SRS).md>) và [hợp đồng](<Notitek - HỢP ĐỒNG TÍCH HỢP API VÀ SỰ KIỆN.md>) trước khi code phần phụ thuộc.
 
@@ -63,3 +63,19 @@ Tech Lead bàn giao sơ đồ thành phần và tương tác cho các lát cắt
 ## 6 Nguyên tắc mở rộng
 
 Các module nguồn tích hợp qua hợp đồng; lõi Notification không phụ thuộc enum trạng thái Order, session OTP hoặc sổ tài chính. Luồng mới ưu tiên bổ sung hợp đồng/cấu hình/mẫu; thay lõi phải được giải thích bằng nhu cầu năng lực gửi dùng chung. Kết nối kênh không cấp quyền User và cấu hình brand không vượt ranh giới dữ liệu.
+
+## 7 Đầu vào thiết kế sau PO review SRS 1.0
+
+Baseline SRS đã phân rã 22 nhóm chức năng. Thiết kế cần đáp ứng yêu cầu quan sát được, còn stack/provider/schema vật lý và các ADR vẫn do Tech Lead chốt.
+
+| Vấn đề thiết kế | Bằng chứng thiết kế và kiểm chứng cần có |
+|---|---|
+| Cửa sổ lệnh đồng bộ | Cách truyền/áp hạn xử lý, dừng phần chưa ra kênh khi hết cửa sổ; không biến timeout OTP thành retry nền; AT-04/23. |
+| Ghi nhận và chống trùng | Ranh giới accepted, xử lý đồng thời, phục hồi sau crash, bảo vệ dấu đối chiếu bí mật, vòng đời khóa và dấu hủy; AT-02/22/23/28. |
+| Kết quả | Mô hình riêng cho bằng chứng kênh, mức đạt mục tiêu và đọc; bảng chuyển trạng thái trễ/xung đột; phát lại kết quả không phát lại tin; AT-25. |
+| In-app | Nguồn trạng thái đọc backend, scope hiện tại, pagination/đếm và cách tách cache frontend; chuyển trạng thái đọc feed cũ có chính sách; AT-08/15/26. |
+| Đích Push | Contract chủ sở hữu, version/thu hồi/đổi chủ, độ mới và phản hồi token lỗi; AT-12/26. |
+| Kết nối và bí mật | Version kết nối, xác thực callback, bảo vệ credential/biến bí mật ở cả hàng lỗi/audit/backup; AT-24/27/28. |
+| Tải và vận hành | Hạn chế tải, ưu tiên, giới hạn provider, phạm vi dừng, số liệu và fault model với RPO/RTO được xác nhận; AT-27 và SRS-N01 đến SRS-N07. |
+
+Các dòng này là đầu vào cho ADR/thiết kế, không chứng nhận đã có code hoặc đã chạy các ca AT.
