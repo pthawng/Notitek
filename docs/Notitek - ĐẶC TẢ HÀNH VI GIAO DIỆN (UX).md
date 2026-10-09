@@ -14,7 +14,7 @@ Backend kiểm tra quyền và ngữ cảnh. Giao diện dùng ngữ cảnh đ�
 
 | Mã | Màn hình/thành phần | Actor | Hành vi và nguồn dữ liệu | Story |
 |---|---|---|---|---|
-| UX-01 | Chuông và danh sách thông báo | Người dùng Shop | Hiển thị số chưa đọc và danh sách đúng ngữ cảnh; tiếp nối thành phần hiện có; nguồn Notification và cảnh báo User theo hợp đồng chuyển đổi | ST-05/08 |
+| UX-01 | Chuông và danh sách thông báo | Người dùng Shop | Hiển thị số chưa đọc và danh sách đúng ngữ cảnh; tiếp nối thành phần hiện có; nguồn Notification và cảnh báo User theo hợp đồng event | ST-05/08 |
 | UX-02 | Chi tiết thông báo công việc | Người dùng có quyền trong Shop | Sự việc, đối tượng, nội dung và hành động mở đơn; đọc tách với hành động; Order kiểm tra quyền khi mở | ST-05 |
 | UX-03 | Chi tiết cảnh báo/yêu cầu thiết bị | Chủ tài khoản | Hiển thị trạng thái, khả năng thao tác do User cấp; xác nhận/báo không nhận ra gọi User; cập nhật kết quả từ nguồn | ST-08 |
 | UX-04 | Tra cứu yêu cầu và kết quả gửi | Vận hành có quyền | Tìm theo reference; xem các trường hợp gửi, bản/kênh/lần thử và lý do; nội dung che theo quyền | ST-09 |
@@ -22,7 +22,7 @@ Backend kiểm tra quyền và ngữ cảnh. Giao diện dùng ngữ cảnh đ�
 
 UX-05 không tự yêu cầu xây trình thiết kế workflow hoặc trang quản trị đầy đủ ở đợt đầu. Nếu dùng cấu hình do vận hành quản lý, vẫn phải có quyền, phiên bản, kiểm tra và audit theo hợp đồng.
 
-Trạng thái đọc của In-app mới lấy backend làm nguồn sự thật theo SRS-F08.05; local cache chỉ hỗ trợ trình bày. Đánh dấu đọc được lưu theo người/bản tin và hiển thị ở lần tải sau trên thiết bị được phép khác; lỗi lưu phải có phản hồi, không tự báo thành công. Tin từ feed User cũ cần chính sách chuyển đọc riêng, không suy đã đọc từ việc yêu cầu bảo mật đã xử lý.
+Trạng thái đọc của In-app mới lấy backend làm nguồn sự thật theo SRS-F08.05; local cache chỉ hỗ trợ trình bày. Đánh dấu đọc được lưu theo người/bản tin và hiển thị ở lần tải sau trên thiết bị được phép khác; lỗi lưu phải có phản hồi, không tự báo thành công. Không suy đã đọc từ việc yêu cầu bảo mật đã xử lý.
 
 ## 3 Trạng thái màn hình
 
@@ -44,7 +44,7 @@ Email lời mời dẫn tới chức năng User. Thông báo giao thất bại d
 
 ## 5 Tiếp nối thành phần hiện có
 
-[NotificationBell](../../shop-fe/apps/business-web/features/notification-center/components/NotificationBell.tsx) và [useNotificationCenter](../../shop-fe/apps/business-web/features/notification-center/use-notification-center.ts) hiện lấy feed cảnh báo thiết bị và thực hiện hành động qua User. Trạng thái đọc đang có phần lưu theo phiên trình duyệt. Thiết kế hộp tin mới phải xác định ánh xạ ID, nguồn dữ liệu và chuyển trạng thái đọc để không tạo hai bản cảnh báo hoặc làm mất khả năng xử lý hiện tại.
+[NotificationBell](../../shop-fe/apps/business-web/features/notification-center/components/NotificationBell.tsx) và [useNotificationCenter](../../shop-fe/apps/business-web/features/notification-center/use-notification-center.ts) hiện là giao diện chuông cảnh báo thiết bị và thực hiện hành động qua User. Trạng thái đọc đang có phần lưu theo phiên trình duyệt. Hộp tin Notitek là nguồn dữ liệu duy nhất cho chuông mới; giao diện chỉ cần nối lại nguồn này, dùng ID nguồn để không tạo hai bản cảnh báo và giữ khả năng xử lý tại User.
 
 Các toast/modal báo kết quả thao tác của frontend là phản hồi trên màn hình. Chỉ đưa vào hộp thông báo khi có sự việc/yêu cầu gửi riêng được chủ nghiệp vụ xác nhận; không chuyển mọi lỗi HTTP hoặc thông báo thành công của UI thành tin bền vững.
 
