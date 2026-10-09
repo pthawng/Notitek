@@ -1,6 +1,6 @@
 # Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC
 
-**Phiên bản:** 1.0. **Ngày:** 08/10/2026. **Chủ trì:** PO Notification.
+**Phiên bản:** 1.1. **Ngày:** 09/10/2026. Bản 1.1: hủy DEC-11 (không có hệ thống cũ), chốt ADR-01 tự xây, loại ADR-07. **Chủ trì:** PO Notification.
 **Trạng thái:** PO đã chốt 12 DEC của đợt đầu cùng giá trị khởi điểm cho SRS-P01 đến SRS-P12. Các điểm ghi "Chờ xác nhận" ở mục 3 cần bên sở hữu ký trước khi nghiệm thu phần liên quan; đội được dùng giá trị trong tài liệu này để code, cấu hình và kiểm thử.
 
 Tài liệu này trả lời các câu hỏi tại mục 11 [BRD](<../Notitek - ĐẶC TẢ YÊU CẦU NGHIỆP VỤ (BRD).md>), mục 4 [phạm vi phát hành](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>) và mục 11 [SRS](<Notitek - ĐẶC TẢ YÊU CẦU PHẦN MỀM (SRS).md>). Quyết định được chốt bởi người được người yêu cầu giao vai trò PO; không thay chữ ký của Tech Lead, pháp chế, tài chính hoặc vận hành ở các điểm thuộc thẩm quyền của họ.
@@ -21,7 +21,7 @@ Nguyên tắc chốt: chọn phương án đơn giản nhất đủ cho bốn l�
 | DEC-08 | Chủ ngân sách là brand/đơn vị kinh doanh; Notification áp hạn mức cứng theo ngày, không tự giữ sổ | Tài chính, chủ brand |
 | DEC-09 | Bảng thời gian lưu từng loại dữ liệu; OTP không lưu ra đĩa; xem dữ liệu gốc cần quyền riêng | Pháp chế/DPO |
 | DEC-10 | Bằng chứng và tiêu chí đạt từng kênh/luồng; chỉ fallback SMS khi ZNS lỗi chắc chắn | — |
-| DEC-11 | Kiểm kê 2 tuần, dùng lại OA/template, chuyển từng luồng bằng flag ở nguồn, shadow 1 tuần, không gửi kép | Vận hành ZNS hiện tại |
+| DEC-11 | Đã hủy: không có hệ thống cũ cần chuyển đổi | — |
 | DEC-12 | Catalog 8 quyền Notification; tách người sửa và người duyệt cấu hình | User/Authorization |
 
 ## 2 Nội dung quyết định
@@ -228,15 +228,11 @@ Order phát **sự việc nghiệp vụ**, không phát lệnh dành cho Notific
 
 **Ảnh hưởng:** SRS-F07/F09, mục 8 SRS, ADR-04, AT-09/25.
 
-### 2.11 DEC-11 — Chuyển đổi ZNS cũ
+### 2.11 DEC-11 — Đã hủy
 
-1. Vận hành kiểm kê trong 2 tuần: OA, template ID đã được Zalo duyệt, sự việc kích hoạt, hệ thống đang gửi và sản lượng tháng.
-2. Dùng lại OA và template đã duyệt để không phải chờ Zalo duyệt lại.
-3. Chuyển từng luồng bằng feature flag đặt ở nguồn (Order). Tại mọi thời điểm chỉ một hệ thống gửi một luồng; không gửi kép.
-4. Chạy shadow 1 tuần: Notification tính người nhận, mẫu và kênh nhưng không gửi; đối chiếu với hệ thống cũ, sai lệch dưới 1% mới bật thật.
-5. Rollback bằng cách lật flag. Hệ thống cũ giữ khả năng chạy thêm 30 ngày sau khi chuyển.
+Ngày 09/10/2026 PO xác nhận Notitek là hệ thống mới, không có hệ thống thông báo hoặc ZNS cũ. Không có kiểm kê, feature flag chuyển luồng, shadow hay rollback về hệ thống cũ. OA và template ZNS được đăng ký mới và chờ Zalo duyệt (xem CF-08). Mã DEC-11 giữ lại để không đổi số, không tái sử dụng.
 
-**Ảnh hưởng:** ST-10, SRS-F22, ADR-07, AT-20.
+**Ảnh hưởng đã gỡ:** ST-10, SRS-F22, ADR-07, AT-20.
 
 ### 2.12 DEC-12 — Danh mục quyền
 
@@ -287,13 +283,13 @@ PO đã chốt hướng xử lý; các điểm sau thuộc thẩm quyền bên k
 | CF-05 | Sản lượng OTP và đơn hiện tại để đối chiếu tải thiết kế | Vận hành | 22/10/2026 | Nghiệm thu tải SRS-N03 |
 | CF-06 | Triển khai Web Push trên Shop | Chủ Shop FE | 15/10/2026 | ST-06 |
 | CF-07 | Đăng ký 8 quyền vào catalog và gán mặc định | User/Authorization | 22/10/2026 | ST-05/09 |
-| CF-08 | Danh sách OA/template ZNS đang dùng | Vận hành ZNS hiện tại | 22/10/2026 | ST-07/10 |
+| CF-08 | Đăng ký OA mới và template ZNS cho luồng giao thất bại, gửi Zalo duyệt (thời gian duyệt tính vào kế hoạch) | Vận hành | 22/10/2026 | ST-07 |
 
 Nếu bên ký đề xuất giá trị khác, PO cập nhật tài liệu này, ghi phiên bản và lý do; không sửa ngầm giá trị đã dùng trong code hoặc kiểm thử.
 
 ## 5 Việc tiếp theo
 
-- Tech Lead viết ADR-01 đến ADR-07 dựa trên các quyết định trên; ADR-02 chọn sản phẩm broker.
+- Tech Lead viết ADR-01 đến ADR-06 dựa trên các quyết định trên (ADR-01 đã chốt tự xây, ADR-07 đã loại); ADR-02 chọn sản phẩm broker.
 - Tech Lead viết OpenAPI và JSON Schema theo mục 2.2, kèm danh mục mã lỗi và bộ ví dụ.
 - QA cập nhật test case AT với giá trị tại mục 3.
-- Vận hành khởi động đăng ký brandname SMS, tài khoản FCM và kiểm kê ZNS trong tuần đầu.
+- Vận hành khởi động đăng ký brandname SMS, tài khoản FCM và đăng ký OA/template ZNS mới trong tuần đầu.

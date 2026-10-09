@@ -224,7 +224,7 @@ Thông báo tài khoản và thông báo công việc được tách ngữ cản
 | P1 - trải nghiệm và vận hành | Lựa chọn nhận thông báo, quản trị tự phục vụ, lịch/gom nhóm, quản lý hạn mức và luồng P1. | Có nguồn quyền/tư cách, dữ liệu lựa chọn nhận thông báo, quyền quản trị và chính sách chi phí đã chốt. |
 | P2 - mở rộng | Module tài chính/hỗ trợ/giá, chiến dịch, đánh giá dịch vụ, A/B Testing và mở rộng app/kênh theo nhu cầu. | Có chủ nghiệp vụ và hợp đồng riêng; Marketing có căn cứ đồng ý, tập nhận và phê duyệt. |
 
-Phạm vi 5 kênh và các lát cắt đợt đầu đã được xác nhận. Các luồng còn lại và quản trị nâng cao được phân kỳ riêng; danh mục dài hạn không là cam kết hoàn thành đồng thời. Hợp đồng, chính sách và thời điểm bật gửi thật/chuyển đổi được chốt theo từng phần.
+Phạm vi 5 kênh và các lát cắt đợt đầu đã được xác nhận. Các luồng còn lại và quản trị nâng cao được phân kỳ riêng; danh mục dài hạn không là cam kết hoàn thành đồng thời. Hợp đồng, chính sách và thời điểm bật gửi thật được chốt theo từng phần.
 
 ### 5.3. Ngoài trách nhiệm của Notification
 
@@ -550,7 +550,7 @@ DEC-01 đã **chốt 5 kênh và các lát cắt đợt đầu** ngày 08/10/202
 | DEC-08 | Ai sở hữu/kiểm soát ngân sách, Notification được giao thực thi phần nào; đơn vị chịu phí, hạn mức và chỉ dẫn khi không được gửi là gì? | Chủ ngân sách + tài chính + vận hành | COST và khả năng gửi thật; không mặc định Notification quản lý sổ ngân sách. |
 | DEC-09 | Giữ loại dữ liệu nào bao lâu; ai xem/xuất, khi nào ẩn/xóa và audit giữ thế nào? | Bảo vệ dữ liệu + vận hành + chủ sản phẩm | SEC, lịch sử và hộp In-app. |
 | DEC-10 | Loại bằng chứng giao từng kênh; tiêu chí kết quả tổng hợp; khi nào chuyển dự phòng với kết quả chưa rõ? | Notification + nhà cung cấp kênh gửi + chủ nghiệp vụ | CHN và event kết quả. |
-| DEC-11 | Mẫu ZNS/SMS kế thừa nào đang dùng; nội dung, đầu mối, brand/pháp nhân và điều kiện đã được duyệt? | Vận hành hiện tại + chủ brand | Chuyển đổi luồng cũ sang module mới. |
+| DEC-11 | Đã hủy (09/10/2026): không có hệ thống cũ. Mẫu ZNS/SMS được xây dựng và đăng ký mới. | — | — |
 | DEC-12 | Hành động/tài nguyên Notification nào cần đăng ký catalog User/Authorization; ai được cấp quyền soạn/duyệt/gửi lại/dừng; có tách người soạn và người duyệt không? | Chủ nền tảng + User/phân quyền | Dùng phân quyền chung; không xây role/quyền độc lập trong Notification. |
 
 Khi quyết định được duyệt, ghi nội dung, người duyệt, ngày và các BR/UC bị ảnh hưởng; không xóa câu hỏi mà không lưu kết quả. Một DEC chưa chốt chỉ chặn phần phụ thuộc vào nó, không mặc định chặn toàn bộ module.
