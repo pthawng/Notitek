@@ -1,6 +1,6 @@
 # Notitek - THIẾT KẾ KỸ THUẬT SƠ BỘ
 
-**Phiên bản:** 0.2. **Ngày:** 08/10/2026. **Trạng thái:** Mô hình logic và hạng mục thiết kế để Tech Lead chốt.
+**Phiên bản:** 0.3. **Ngày:** 09/10/2026. **Trạng thái:** Mô hình logic và hạng mục thiết kế để Tech Lead chốt.
 
 Thiết kế hiện xác định ranh giới xử lý và dữ liệu cần giải thích các use case. Nó chưa chọn stack, engine điều phối, nhà cung cấp, broker, schema vật lý hoặc kiến trúc triển khai. Tech Lead hoàn thiện các quyết định dưới đây từ [SRS](<Notitek - ĐẶC TẢ YÊU CẦU PHẦN MỀM (SRS).md>) và [hợp đồng](<Notitek - HỢP ĐỒNG TÍCH HỢP API VÀ SỰ KIỆN.md>) trước khi code phần phụ thuộc.
 
@@ -35,13 +35,13 @@ Các phần này là trách nhiệm logic, không bắt buộc trở thành các
 
 | Mã | Quyết định | Đầu vào và tiêu chí đánh giá |
 |---|---|---|
-| ADR-01 | Tự xây hay dùng lại giải pháp điều phối; cách mở rộng kênh | Năm kênh, phạm vi app/Shop, bảo vệ dữ liệu, khả năng vận hành và công sức tích hợp. Tham khảo Novu không tự thành quyết định dùng Novu. |
+| ADR-01 | **Đã chốt (PO, 09/10/2026): tự xây lõi điều phối bằng Go**; kênh mở rộng qua Adapter/Strategy. Không dùng Novu hay giải pháp điều phối có sẵn. | Lý do: stack đã chốt (Go, RabbitMQ, PostgreSQL), hợp đồng OTP đồng bộ và Access Context của SuperPlatform. Tech Lead vẫn viết ADR chính thức ghi phương án đã cân nhắc. |
 | ADR-02 | Phương thức nhận lệnh và phát/nhận event bền vững | Hợp đồng User/Order, replay, chống trùng, cửa sổ lỗi; không mặc định phải có broker cụ thể. |
 | ADR-03 | Cách lưu và bảo vệ dữ liệu, gồm bí mật tạm thời | DEC-09, thời gian xử lý/thử lại, yêu cầu tra cứu, audit và xóa. |
 | ADR-04 | Mô hình kết quả, chuyển trạng thái và tổng hợp | DEC-10, callback trễ/trùng/xung đột, kết quả một phần, In-app và đọc. |
 | ADR-05 | Cách nhận/tra và thu hồi đích Push | Chủ sở hữu thiết bị, client được chọn, đổi chủ thiết bị và phản hồi token lỗi. |
 | ADR-06 | Cách kiểm tra quyền/ngữ cảnh tương tác và xử lý nền | Hợp đồng User/Authorization; không dùng token người tạo thay quyền tập nhận. |
-| ADR-07 | Phương án chuyển feed cảnh báo User và ZNS cũ | Giữ hành động nguồn, ánh xạ ID, điểm chuyển trách nhiệm gửi và cơ chế khôi phục. |
+| ~~ADR-07~~ | Đã loại bỏ (09/10/2026): Notitek là hệ thống mới, không có feed/ZNS cũ cần chuyển. Mã giữ lại, không tái sử dụng. | — |
 
 ADR cần ghi lựa chọn, phương án đã cân nhắc, hệ quả, người quyết định và ngày. Chỉ đóng khi đã có đủ đầu vào; không dùng mô hình logic này thay phê duyệt kỹ thuật.
 
@@ -66,14 +66,14 @@ Các module nguồn tích hợp qua hợp đồng; lõi Notification không ph�
 
 ## 7 Đầu vào thiết kế sau PO review SRS 1.0
 
-Baseline SRS đã phân rã 22 nhóm chức năng. Thiết kế cần đáp ứng yêu cầu quan sát được, còn stack/provider/schema vật lý và các ADR vẫn do Tech Lead chốt.
+Baseline SRS đã phân rã 21 nhóm chức năng (SRS-F22 đã loại ở bản 1.2). Thiết kế cần đáp ứng yêu cầu quan sát được, còn stack/provider/schema vật lý và các ADR vẫn do Tech Lead chốt.
 
 | Vấn đề thiết kế | Bằng chứng thiết kế và kiểm chứng cần có |
 |---|---|
 | Cửa sổ lệnh đồng bộ | Cách truyền/áp hạn xử lý, dừng phần chưa ra kênh khi hết cửa sổ; không biến timeout OTP thành retry nền; AT-04/23. |
 | Ghi nhận và chống trùng | Ranh giới accepted, xử lý đồng thời, phục hồi sau crash, bảo vệ dấu đối chiếu bí mật, vòng đời khóa và dấu hủy; AT-02/22/23/28. |
 | Kết quả | Mô hình riêng cho bằng chứng kênh, mức đạt mục tiêu và đọc; bảng chuyển trạng thái trễ/xung đột; phát lại kết quả không phát lại tin; AT-25. |
-| In-app | Nguồn trạng thái đọc backend, scope hiện tại, pagination/đếm và cách tách cache frontend; chuyển trạng thái đọc feed cũ có chính sách; AT-08/15/26. |
+| In-app | Nguồn trạng thái đọc backend, scope hiện tại, pagination/đếm và cách tách cache frontend; không suy trạng thái đọc từ nghiệp vụ; AT-08/15/26. |
 | Đích Push | Contract chủ sở hữu, version/thu hồi/đổi chủ, độ mới và phản hồi token lỗi; AT-12/26. |
 | Kết nối và bí mật | Version kết nối, xác thực callback, bảo vệ credential/biến bí mật ở cả hàng lỗi/audit/backup; AT-24/27/28. |
 | Tải và vận hành | Hạn chế tải, ưu tiên, giới hạn provider, phạm vi dừng, số liệu và fault model với RPO/RTO được xác nhận; AT-27 và SRS-N01 đến SRS-N07. |

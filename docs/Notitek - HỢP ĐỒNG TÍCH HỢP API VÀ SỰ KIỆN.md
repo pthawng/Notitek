@@ -71,7 +71,7 @@ Mỗi kết quả cần reference nguồn, định danh Notification, mức kế
 | Nguồn | Căn cứ hiện có | Điều cần hoàn thiện |
 |---|---|---|
 | User gửi mã/link | NotificationPort nhận Notification và trả NotificationReceipt | Ánh xạ reference, đích, template, parameters, expiresAt; bảo vệ bí mật; bổ sung ngữ cảnh đáng tin cậy khi cần; biểu diễn lỗi/chưa rõ và mức kết quả đủ cho User. |
-| User cảnh báo thiết bị | Chuông Shop dùng feed và hành động device trust của User | Chọn feed/event và khóa đối chiếu để chuyển đổi; giữ trạng thái nghiệp vụ và hành động ở User; tách trạng thái đọc. |
+| User cảnh báo thiết bị | Chuông Shop có giao diện và hành động device trust gọi User | Định nghĩa event cảnh báo và khóa đối chiếu chống trùng; giữ trạng thái nghiệp vụ và hành động ở User; tách trạng thái đọc. |
 | Order | Có các event ghi outbox; sự việc delivery.* chưa là hợp đồng được xác nhận | Định nghĩa đầu vào giao thất bại, người nhận và chỉ dẫn hủy; xây/kiểm chứng đường phát bền vững; thống nhất lỗi/tương thích. |
 | User/Authorization | Application/Client, membership, Access Context và cơ chế quyền chung | Hành động/scope Notification, căn cứ xử lý nền và tách ngữ cảnh tài khoản/công việc. |
 | App/năng lực thiết bị | Bên sở hữu đích Push cần xác định | Client cụ thể, đăng ký/tra/thu hồi đích, đổi chủ thiết bị và xử lý token lỗi. |

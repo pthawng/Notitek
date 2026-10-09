@@ -105,7 +105,7 @@ Các luồng đang gửi qua `NotificationPort` và template trong User: OTP, k�
 | UC-USR-06 | Số điện thoại/email đăng nhập đã thay đổi | Cảnh báo tới liên hệ **cũ**, chỉ hiển thị giá trị mới đã che bớt | Qua NotificationPort sau commit | P0 |
 | UC-USR-07 | Chấm dứt tư cách nhân viên | Báo người bị ảnh hưởng và đầu mối có trách nhiệm theo chính sách; không gửi nếu quyết định chưa có hiệu lực | Gửi trực tiếp | P1 |
 | UC-USR-08 | Yêu cầu phê duyệt và kết quả thay đổi tư cách/quyền | Nhắc đúng người duyệt; báo kết quả cho người yêu cầu; dừng nhắc khi đã xử lý | Có nghiệp vụ phê duyệt, cần chốt event và người nhận | P1 |
-| UC-USR-09 | Cảnh báo và yêu cầu về thiết bị | Chủ tài khoản xem tin, mở và thực hiện hành động tại User; đọc tách kết quả bảo mật; không gắn mặc định vào Shop | Chuông Shop dùng feed device trust của User; cần hợp đồng tiếp nối vào hộp tin chung | P0 |
+| UC-USR-09 | Cảnh báo và yêu cầu về thiết bị | Chủ tài khoản xem tin, mở và thực hiện hành động tại User; đọc tách kết quả bảo mật; không gắn mặc định vào Shop | Chuông Shop có giao diện device trust gọi User; cần hợp đồng event vào hộp tin chung | P0 |
 
 ## 4. Luồng tích hợp từ Module Order
 

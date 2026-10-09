@@ -17,7 +17,7 @@ SRS này đặc tả hành vi phần mềm quan sát và kiểm chứng được
 
 - “Phải” là hành vi bắt buộc trong phạm vi được ghi; “không được” là điều hệ thống phải ngăn.
 - SRS-F01 đến SRS-F14 giữ ý nghĩa nhóm của bản 0.1. Mã con, ví dụ SRS-F01.01, là yêu cầu cụ thể để phát triển và QA truy vết.
-- SRS-F15 đến SRS-F22 bổ sung các năng lực còn thiếu. Tất cả các nhóm chức năng dưới đây thuộc đợt đầu ở mức tối thiểu được mô tả.
+- SRS-F15 đến SRS-F21 bổ sung các năng lực còn thiếu (SRS-F22 đã loại bỏ ở bản 1.2). Tất cả các nhóm chức năng dưới đây thuộc đợt đầu ở mức tối thiểu được mô tả.
 - SRS-N01 đến SRS-N07 giữ mã yêu cầu chất lượng. Các tham số chưa có giá trị được quản lý ở mục 11; không được coi là đã nghiệm thu.
 - Mã BR/UC/AT liên kết đến tài liệu nguồn. Một nhóm SRS có nhiều yêu cầu con; đạt một ca AT chưa chứng minh đạt cả nhóm.
 - Tên dữ liệu và trạng thái trong SRS diễn đạt ý nghĩa nghiệp vụ. Tên trường, enum và mã HTTP chính thức thuộc hợp đồng tích hợp.
@@ -30,6 +30,7 @@ SRS này đặc tả hành vi phần mềm quan sát và kiểm chứng được
 | 0.2 | Viết lại từ nhu cầu của nguồn, người nhận và vận hành; phân rã hành vi, bổ sung giao diện ngoài, năm kênh, kết quả và tiêu chí kiểm chứng. |
 | 1.0 | Hoàn thành vòng PO review ngày 08/10/2026; sửa cửa sổ đồng bộ/bảo vệ dữ liệu chống trùng, đồng bộ UC–UX–hợp đồng–thiết kế–backlog và chốt baseline nghiệp vụ. |
 | 1.1 | Ngày 08/10/2026, PO chốt DEC-01 đến DEC-12 và giá trị khởi điểm SRS-P01 đến SRS-P12; mục 11 dẫn chiếu tài liệu Quyết định PO cho các DEC. Không đổi yêu cầu chức năng. |
+| 1.2 | Ngày 09/10/2026, PO xác nhận không có hệ thống cũ: loại SRS-F22 và DEC-11, bỏ phần chuyển feed/ZNS cũ ở SRS-F10, SRS-F19, mục 7.4 và PO07. |
 
 ### 1.3. Các từ dùng trong tích hợp
 
@@ -65,7 +66,7 @@ SRS này đặc tả hành vi phần mềm quan sát và kiểm chứng được
 - Tiếp nhận lệnh gửi và sự việc từ nguồn được phép; chống trùng; chọn luồng, mẫu và người nhận theo hợp đồng.
 - SMS cho OTP; Email cho lời mời; In-app/Push cho Shop; Zalo ZNS và SMS dự phòng theo chính sách cho liên hệ của đơn.
 - Hộp tin tiếp nối cảnh báo thiết bị User, tách ngữ cảnh tài khoản/công việc.
-- Cấu hình tối thiểu, kết nối năm kênh, kết quả, tra cứu, quyền, bảo vệ dữ liệu, điều kiện chi phí và chuyển đổi luồng cũ được chọn.
+- Cấu hình tối thiểu, kết nối năm kênh, kết quả, tra cứu, quyền, bảo vệ dữ liệu, điều kiện chi phí.
 - Đường tích hợp và việc phối hợp User, Order, frontend, chủ đích Push, vận hành là phụ thuộc có người chịu trách nhiệm.
 
 Đợt đầu phải kiểm chứng đủ năm kênh trên client và môi trường đã chọn. Không yêu cầu mỗi luồng phải dùng cả năm kênh.
@@ -97,7 +98,7 @@ Notification không cần biết session OTP hoặc toàn bộ trạng thái đ�
 | [OtpDeliveryPolicy](../../user-spf/services/users-core-service/src/main/java/com/supership/users/authentication/application/OtpDeliveryPolicy.java), [OtpSessionService](../../user-spf/services/users-core-service/src/main/java/com/supership/users/authentication/application/OtpSessionService.java) | Mỗi lần gửi có deliveryId riêng; User gửi trước khi cập nhật mã/counters; timeout không tự retry, mã trước có thể còn dùng được. | Không kích hoạt retry nền OTP ngoài chỉ dẫn; kết quả đến muộn không làm Notification quyết định mã có hiệu lực. |
 | [InvitationLinkNotifier](../../user-spf/services/users-core-service/src/main/java/com/supership/users/invitation/InvitationLinkNotifier.java), [NotifyAfterCommit](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotifyAfterCommit.java) | Tin sau sự việc được gửi sau commit; lỗi gửi không đảo thay đổi nguồn. | Nguồn cần cơ chế bàn giao bền vững nếu phải phát lại sau lỗi; callback trong bộ nhớ chưa đủ chứng minh không mất tin. |
 | [OutboxWriter](../../order-spf/src/main/java/vn/supership/superplatform/order/platform/outbox/OutboxWriter.java) | Order ghi event cùng giao dịch; chú thích ghi dispatcher chưa được xây dựng. | Có outbox chưa có nghĩa Notification đã nhận; hợp đồng giao thất bại và đường phát là công việc của kế hoạch tích hợp. |
-| [Chuông Shop](../../shop-fe/apps/business-web/features/notification-center/use-notification-center.ts) | Feed và hành động device trust thực từ User; đọc có phần lưu theo browser session. | Cần đối chiếu ID khi chuyển nguồn; trạng thái đọc mới phải có nguồn sự thật rõ ràng. |
+| [Chuông Shop](../../shop-fe/apps/business-web/features/notification-center/use-notification-center.ts) | Hiện có giao diện chuông và hành động device trust gọi User; đọc có phần lưu theo browser session. | Chuông được nối lại vào hộp tin của Notitek; trạng thái đọc mới phải có nguồn sự thật rõ ràng ở backend. |
 | [Thông báo lời mời nội bộ](../../internal-fe/features/employees/queries/use-employee-invitation-queries.ts) | Giao diện hiện thông báo hệ thống chưa gửi email. | Hoàn thành tích hợp phải sửa thông điệp theo kết quả thật, không giữ lời hứa sai. |
 | [ResolveDtos](../../user-spf/services/users-core-service/src/main/java/com/supership/users/accesscontext/api/ResolveDtos.java) | Quyết định ALLOW/DENY/NOT_EVALUATED theo hành động/tài nguyên; permissions là gợi ý UI; scope có thể là bộ lọc rộng. | Backend cần quyết định phù hợp; bộ lọc hoặc danh sách permissions không thay kiểm tra quyền trên tài nguyên. |
 
@@ -326,8 +327,8 @@ Hợp đồng phải liệt kê lỗi có thể sửa, lỗi có thể retry và
 
 | Mã | Yêu cầu bắt buộc |
 |---|---|
-| SRS-F10.01 | Hệ thống phải tiếp nối cảnh báo/yêu cầu của User qua feed/event theo hợp đồng được chọn; chỉ hiển thị cho đúng chủ tài khoản trên app được phép. |
-| SRS-F10.02 | Mỗi cảnh báo nguồn phải có khóa đối chiếu ổn định. Cùng cảnh báo xuất hiện qua feed cũ và đường mới không được thành hai tin độc lập trong hộp tin. |
+| SRS-F10.01 | Hệ thống phải tiếp nối cảnh báo/yêu cầu của User qua event theo hợp đồng; chỉ hiển thị cho đúng chủ tài khoản trên app được phép. |
+| SRS-F10.02 | Mỗi cảnh báo nguồn phải có khóa đối chiếu ổn định. Cùng cảnh báo được phát lại không được thành hai tin độc lập trong hộp tin. |
 | SRS-F10.03 | Trạng thái yêu cầu bảo mật, khả năng thao tác và mô tả hành động phải do User xác nhận; Notification không tự kết luận từ đã đọc hoặc số lần nhấn nút. |
 | SRS-F10.04 | Ứng dụng phải gọi User để cho phép/báo không nhận ra thiết bị; User kiểm tra điều kiện và thực hiện. Notification không mở phiên, tin cậy thiết bị hoặc thu hồi đăng nhập. |
 | SRS-F10.05 | Khi nguồn đã xử lý/hết hạn hoặc không lấy được trạng thái cần thiết, UI không được cho thao tác dựa trên bản cũ; phải hiển thị kết quả/lỗi phù hợp và có cách tải lại. |
@@ -473,9 +474,9 @@ Hợp đồng phải liệt kê lỗi có thể sửa, lỗi có thể retry và
 | SRS-F19.02 | Hệ thống phải kiểm tra biến và điều kiện kênh/provider theo hợp đồng cấu hình hiện hành; không ghi “giao” khi provider từ chối mẫu hoặc đích. |
 | SRS-F19.03 | Người nhận hàng có thể nhận ZNS theo liên hệ giao dịch được Order cấp mà không có tài khoản User; việc nhận tin không tạo quyền truy cập Shop. |
 | SRS-F19.04 | Hệ thống phải giữ nguyên mã lỗi provider cần tra cứu đồng thời ánh xạ sang lý do an toàn; timeout giữ chưa rõ, SMS chỉ theo chính sách fallback đã duyệt. |
-| SRS-F19.05 | Mẫu/định danh/đích từ luồng ZNS cũ chỉ được chuyển sau kiểm kê, xác nhận và thử thật theo kế hoạch; không giả định mọi cấu hình cũ dùng được ngay. |
+| SRS-F19.05 | OA và mẫu ZNS đăng ký mới phải được Zalo duyệt và thử thật trước khi bật gửi thật; không giả định mẫu chưa duyệt dùng được. |
 
-**Kiểm chứng:** Sai mẫu dừng đúng lý do; liên hệ không có User vẫn gửi được khi hợp lệ; timeout không tự nhân SMS; chuyển luồng có bằng chứng mẫu thật.
+**Kiểm chứng:** Sai mẫu dừng đúng lý do; liên hệ không có User vẫn gửi được khi hợp lệ; timeout không tự nhân SMS; mẫu đã duyệt có bằng chứng gửi thử thật.
 
 ### 6.20. SRS-F20 — Áp dụng mục đích và lựa chọn nhận tin
 
@@ -505,20 +506,9 @@ Hợp đồng phải liệt kê lỗi có thể sửa, lỗi có thể retry và
 
 **Kiểm chứng:** Burst có kết quả nhận/chặn rõ; backlog quá hạn có lý do; provider rate-limit không gây retry storm. Mức tải và thuật toán điều phối thuộc tham số/thiết kế.
 
-### 6.22. SRS-F22 — Chuyển đổi nguồn cũ có thể kiểm soát
+### 6.22. SRS-F22 — Đã loại bỏ (phiên bản 1.2)
 
-**Nhu cầu:** “Bật Notification mới không được gửi gấp đôi hoặc làm mất cảnh báo đang dùng.”
-**Truy vết:** UC-USR-09, UC-ORD-05 và luồng cũ được chọn; BR-TRG-02/05, BR-OPS-04; AT-14/20/23.
-
-| Mã | Yêu cầu bắt buộc |
-|---|---|
-| SRS-F22.01 | Mỗi luồng chuyển đổi phải có chủ sở hữu, nguồn cũ/mới, mẫu/đích, khóa đối chiếu và điểm chuyển trách nhiệm gửi rõ ràng. |
-| SRS-F22.02 | Không được bật hai nguồn gửi thật cho cùng tập sự việc mà không có cơ chế phân chia/chống trùng đã kiểm chứng. Chạy đối chiếu không gửi thật phải có nhãn riêng. |
-| SRS-F22.03 | Chuyển feed cảnh báo phải giữ ID nguồn và hành động tại User; chính sách giữ/khởi tạo trạng thái đọc phải được ghi và kiểm tra, không tự suy từ trạng thái nghiệp vụ. |
-| SRS-F22.04 | Kế hoạch khôi phục phải xác định phần đã gửi, chưa gửi và chưa rõ; quay lại nguồn cũ không được replay mù quáng phần đã đạt. |
-| SRS-F22.05 | Chỉ coi luồng chuyển đổi hoàn tất khi có bằng chứng gửi/hiển thị thật, đối chiếu số liệu, ngoại lệ và cách dừng/khôi phục trong phạm vi được chọn. |
-
-**Kiểm chứng:** Chuyển một luồng thử và khôi phục không nhân tin; cảnh báo vẫn xử lý ở User; mock/shadow không trở thành bằng chứng gửi thật.
+Notitek là hệ thống mới, không có hệ thống thông báo/ZNS cũ cần chuyển đổi (PO chốt 09/10/2026). Nhóm này, gồm SRS-F22.01 đến SRS-F22.05 (chuyển đổi nguồn cũ, shadow, rollback về nguồn cũ), được loại bỏ. Mã SRS-F22 được giữ để không đổi số các nhóm khác và không được tái sử dụng. Yêu cầu chống nhân tin và một ID nguồn một mục trong hộp tin vẫn do SRS-F02 và SRS-F10.02 đảm nhận.
 
 ## 7. Cách áp dụng vào bốn luồng ưu tiên
 
@@ -575,14 +565,14 @@ Order chịu trách nhiệm đường phát bền vững và ngữ nghĩa sự v
 
 ### 7.4. R1-SECURITY — Cảnh báo và yêu cầu về thiết bị
 
-Cảnh báo thuộc tài khoản và xuất hiện trên app được chính sách cho phép. ID cảnh báo User là căn cứ đối chiếu feed cũ/mới. Trạng thái đọc lưu riêng; trạng thái yêu cầu và khả năng hành động lấy từ User.
+Cảnh báo thuộc tài khoản và xuất hiện trên app được chính sách cho phép. ID cảnh báo User là khóa đối chiếu chống trùng khi phát lại. Trạng thái đọc lưu riêng; trạng thái yêu cầu và khả năng hành động lấy từ User.
 
 | Tình huống kiểm chứng | Kết quả mong đợi | Truy vết |
 |---|---|---|
 | Người dùng chỉ đánh dấu đọc | Không cho phép đăng nhập, không tin cậy/thu hồi thiết bị | SRS-F08/10; AT-13 |
 | Đổi Shop khi cảnh báo đang chờ | Vẫn thuộc chủ tài khoản, không bị chuyển thành tin công việc của Shop mới | SRS-F05/08/10; AT-08/15 |
 | User xử lý yêu cầu trên thiết bị khác | Tải lại lấy trạng thái nguồn; nút không còn hợp lệ bị vô hiệu, trạng thái đọc vẫn riêng | SRS-F08/10; AT-13/26 |
-| Feed cũ và event mới cùng có cảnh báo | Một mục theo ID nguồn, giữ hành động User | SRS-F02/10/22; AT-14 |
+| Cùng cảnh báo được phát lại | Một mục theo ID nguồn, giữ hành động User | SRS-F02/10; AT-14 |
 
 ## 8. Ý nghĩa trạng thái và quy tắc tổng hợp
 
@@ -753,7 +743,7 @@ Ngày 08/10/2026, PO đã chốt giá trị khởi điểm cho cả 12 tham số
 | DEC-08 | Không tự vượt phí, không tự làm sổ ngân sách | Bên sở hữu/cấp phép, chính sách SRS-P12. |
 | DEC-09 | Tách bí mật/nội dung/metadata/audit, che và xóa | Chính sách SRS-P07/09, quyền xem/xuất/xóa. |
 | DEC-10 | Kết quả theo bằng chứng, mục tiêu và một phần tách riêng | Bằng chứng provider thực, kênh bắt buộc/thay thế và bảng chuyển trạng thái máy đọc. |
-| DEC-11 | Chuyển đổi có điểm bàn giao, đối chiếu và khôi phục | Kiểm kê ZNS cũ, mẫu/định danh, tập luồng và thời điểm bật thật. |
+| DEC-11 | Đã hủy: không có hệ thống cũ cần chuyển đổi (09/10/2026) | Không còn đầu ra. OA/mẫu ZNS đăng ký mới theo CF-08. |
 | DEC-12 | Hành động có quyền riêng; ALLOW đúng tài nguyên | Catalog action/resource/scope, người được cấp và contract tests User/Authorization. |
 
 PO đã chốt kết quả cho cả 12 DEC tại [Quyết định PO cho các DEC](<Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>); cột "Đầu ra còn cần chốt" nay là các artifact kỹ thuật (schema, ADR, contract test) và xác nhận của bên sở hữu tại mục 4 tài liệu đó. Các giá trị/đầu ra này chặn phần tương ứng. Có thể làm hợp đồng, thiết kế và kiểm thử phần không phụ thuộc chúng; không coi toàn bộ SRS chưa có giá trị khi một provider chưa được chọn.
@@ -771,10 +761,9 @@ PO đã chốt kết quả cho cả 12 DEC tại [Quyết định PO cho các DE
 | In-app Shop | SRS-F05/08/09/13 | UC-ORD-05, UC-NTF-13 | ST-05 | AT-08/11/15/21/25/26 |
 | Push | SRS-F05/07/09/13/15/16/21 | UC-ORD-05, UC-NTF-08/09 | ST-06 | AT-11/12/24/25/26/27 |
 | ZNS/SMS dự phòng | SRS-F05/07/09/13/14/15/18/19/20/21 | UC-ORD-05 | ST-07 | AT-09/11/19/24/25 |
-| Cảnh báo thiết bị | SRS-F02/05/08/09/10/13/22 | UC-USR-09 | ST-08 | AT-03/08/13/14/15/21/26/28 |
+| Cảnh báo thiết bị | SRS-F02/05/08/09/10/13 | UC-USR-09 | ST-08 | AT-03/08/13/14/15/21/26/28 |
 | Tra cứu/vận hành | SRS-F09/11/12/13/14/15/21 | UC-NTF-12 | ST-09 | AT-03/16/17/18/19/25/27/28 |
-| Chuyển đổi | SRS-F02/09/10/22 | UC-USR-09, UC-ORD-05 và luồng cũ được chọn | ST-10 | AT-14/20/23 |
-| Hợp đồng, nghiệm thu và đo giá trị | Nhóm liên quan trong SRS-F01 đến SRS-F22; SRS-N01 đến SRS-N07 | Các UC được chọn | ST-11/12/13 | Ca liên quan trong AT-01 đến AT-28 và chỉ số nguồn. |
+| Hợp đồng, nghiệm thu và đo giá trị | Nhóm liên quan trong SRS-F01 đến SRS-F21; SRS-N01 đến SRS-N07 | Các UC được chọn | ST-11/12/13 | Ca liên quan trong AT-01 đến AT-28 và chỉ số nguồn. |
 
 Chi tiết AT nằm ở [backlog và nghiệm thu](<Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU.md>). Phạm vi SRS mở rộng năng lực tối thiểu của các story hiện có, không tự bổ sung release Marketing hoặc module tài chính.
 
@@ -808,7 +797,7 @@ SRS chốt yêu cầu quan sát được; việc chọn giải pháp hoặc bậ
 | SRS-PO04 | Replay đúng dữ liệu giữ cùng yêu cầu; cùng khóa dữ liệu xung đột bị từ chối; không tự ghi đè và không retry phần đã đạt. |
 | SRS-PO05 | Bí mật không được tự retry nền sau cửa sổ/chỉ dẫn nguồn; timeout không chứng minh thất bại và không tự kích hoạt fallback. |
 | SRS-PO06 | Mọi tin có người và ngữ cảnh rõ; liên hệ trùng không hợp nhất identity; quyền hiện tại kiểm tra khi xem/hành động. |
-| SRS-PO07 | Trạng thái đọc backend là nguồn sự thật cho In-app mới; đọc không thực hiện nghiệp vụ. Chuyển feed phải có chính sách trạng thái đọc riêng. |
+| SRS-PO07 | Trạng thái đọc backend là nguồn sự thật cho In-app mới; đọc không thực hiện nghiệp vụ. Trạng thái đọc không suy từ trạng thái nghiệp vụ của yêu cầu bảo mật. |
 | SRS-PO08 | Kết quả mục tiêu và kết quả từng kênh tách riêng; kênh tùy chọn lỗi vẫn được hiển thị, phần bắt buộc thiếu không bị che bằng success tổng. |
 | SRS-PO09 | Cấu hình/kết nối phải được kiểm tra, duyệt, phiên bản hóa và audit ngay cả khi quản trị chưa có UI đầy đủ. |
 | SRS-PO10 | Chưa đủ căn cứ quyền/đích an toàn/ngân sách thì không mặc định được phép gửi; thông số chưa xác nhận không được ghi là nghiệm thu đạt. |
@@ -827,12 +816,12 @@ Review đối chiếu BRD 0.5, phạm vi đã chốt, UC ưu tiên, hợp đồn
 
 | Mã | Mức | Phát hiện cần xử lý trước khi chốt | Cách xử lý trong bản 1.0 | Kết quả review tài liệu |
 |---|---|---|---|---|
-| PRV-01 | Cao | Bản 0.1 là nhóm yêu cầu tóm tắt, thiếu đầu vào/ngoại lệ/đầu ra để phát triển và QA dùng | Mục 4–9 có dữ liệu, giao diện, 22 nhóm/136 yêu cầu cụ thể và ca kiểm chứng; giữ mã nhóm cũ | Đã xử lý. |
+| PRV-01 | Cao | Bản 0.1 là nhóm yêu cầu tóm tắt, thiếu đầu vào/ngoại lệ/đầu ra để phát triển và QA dùng | Mục 4–9 có dữ liệu, giao diện, 21 nhóm/131 yêu cầu cụ thể (SRS-F22 đã loại ở bản 1.2) và ca kiểm chứng; giữ mã nhóm cũ | Đã xử lý. |
 | PRV-02 | Cao | Chỉ có TTL mã/hạn gửi chưa ngăn việc gửi nền sau khi User bỏ ứng viên vì timeout | SRS-F01.06, SRS-F07.08/09, SRS-N01 và R1-OTP phân biệt cửa sổ đồng bộ, TTL và callback trễ; AT-04/23 | Đã xử lý; giá trị cửa sổ còn cần User xác nhận ở SRS-P01. |
 | PRV-03 | Cao | Dễ đưa quyết định OTP/đơn/thiết bị tin cậy/ngân sách sang Notification khi mô tả chi tiết | Mục 2.4, SRS-F05/06/10/14 và bốn lát cắt chỉ yêu cầu căn cứ/chỉ dẫn/hợp đồng từ chủ sở hữu | Đã xử lý; không mở trách nhiệm nguồn. |
 | PRV-04 | Cao | Một cờ thành công có thể che người/kênh bắt buộc chưa đạt hoặc nhầm đọc với hoàn tất nghiệp vụ | SRS-F09 và mục 8 tách tiếp nhận, bằng chứng, mục tiêu, đọc; có ví dụ kênh bắt buộc/tùy chọn/thay thế, AT-25 | Đã xử lý; tiêu chí từng luồng thực cần DEC-10. |
 | PRV-05 | Cao | Có tên năm kênh nhưng thiếu kết nối thực, sender/mẫu và vòng đời đích Push | SRS-F15 đến SRS-F19; kiểm tra scope/brand/môi trường, đăng ký/thu hồi qua chủ thiết bị, token lỗi, AT-12/24/26 | Đã xử lý; client/provider thật vẫn cần hợp đồng. |
-| PRV-06 | Vừa | UC cũ để mở hành vi đồng bộ đọc trong khi SRS mới cần nguồn trạng thái đọc rõ | SRS-F08.05 và UC/UX 0.2 thống nhất backend là nguồn sự thật cho In-app mới, chuyển feed cũ có chính sách riêng; AT-26 | Đã đồng bộ. |
+| PRV-06 | Vừa | UC cũ để mở hành vi đồng bộ đọc trong khi SRS mới cần nguồn trạng thái đọc rõ | SRS-F08.05 và UC/UX 0.2 thống nhất backend là nguồn sự thật cho In-app mới, không suy trạng thái đọc từ nghiệp vụ; AT-26 | Đã đồng bộ. |
 | PRV-07 | Cao | So payload chống trùng có thể tạo chỗ lưu/khôi phục OTP ngoài đường gửi được phép | SRS-F02.07, SRS-F13 và AT-28 yêu cầu bảo vệ dữ liệu đối chiếu, hàng lỗi, trace, xóa và restore | Đã xử lý ở yêu cầu; cơ chế bảo vệ do thiết kế chốt. |
 | PRV-08 | Vừa | Các yêu cầu mở rộng cần ca AT và ma trận tương ứng, không chỉ thêm ID trong SRS | Backlog 0.2 bổ sung AT-21 đến AT-28, cập nhật ST-01 đến ST-12; hợp đồng/thiết kế nhận đầu vào SRS 1.0 | Đã đồng bộ; tham chiếu được kiểm tra. |
 | PRV-09 | Cao | Ghi “chốt SRS” dễ bị hiểu là SLA, tải, phí, retention và tích hợp đã được các bên duyệt | Mục 10–11 nêu cách đo, 12 nhóm tham số, chủ trì và phần bị chặn; trạng thái đầu tài liệu nêu đúng phạm vi chốt | Đã phân định; không điền số hoặc xác nhận thay bên sở hữu. |
@@ -848,7 +837,7 @@ Các phát hiện của vòng review đã được xử lý hoặc đưa đúng 
 
 ### 14.4. Bằng chứng rà soát tài liệu
 
-- 22 nhóm chức năng, 136 yêu cầu con có mã duy nhất; 7 nhóm phi chức năng với 25 yêu cầu/tiêu chí kiểm chứng.
+- 21 nhóm chức năng, 131 yêu cầu con có mã duy nhất; 7 nhóm phi chức năng với 25 yêu cầu/tiêu chí kiểm chứng.
 - Giữ các mã SRS-F01 đến SRS-F14 và SRS-N01 đến SRS-N07; bổ sung có mã riêng, không dùng lại mã cho nghĩa khác.
 - 28 kịch bản AT được định nghĩa trong backlog; các tham chiếu BR, UC, story, SRS và AT hợp lệ.
 - Mục lục, tiêu đề và liên kết local được kiểm tra; bảng Markdown có header và số cột thống nhất.

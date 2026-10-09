@@ -189,7 +189,7 @@ Techstack không nên chọn theo một xu hướng chung mà theo **thực tế
 |---|---|---|---|---|
 | TR-01 | Đội thiếu kinh nghiệm Go production làm chậm M1 | Có ít nhất 2 dev đã chạy Go production hoặc kế hoạch nhân sự/đào tạo được duyệt | Tech Lead, quản lý dự án | Trước khi bắt đầu M0 |
 | TR-02 | DevOps chưa hỗ trợ stack Go | Pipeline CI/CD, base image, quét lỗ hổng và quy trình vá cho Go được DevOps xác nhận | DevOps | Trước khi bắt đầu M0 |
-| TR-03 | Lệch chuẩn với các service Java | Danh sách thành phần dùng chung ở mục 3.1 có ước lượng công và contract test với User/Order | Tech Lead | Cùng ADR-01 |
+| TR-03 | Lệch chuẩn với các service Java | Danh sách thành phần dùng chung ở mục 3.1 có ước lượng công và contract test với User/Order. ADR-01 đã chốt tự xây (09/10/2026) | Tech Lead | Trước M0 |
 | TR-04 | Gateway/proxy cắt kết nối SSE | DevOps xác nhận tắt buffering và idle timeout > 25 giây cho endpoint SSE; polling dự phòng hoạt động | DevOps, Shop FE | Trước M2 |
 | TR-05 | Thêm hai hạ tầng mới (RabbitMQ, Redis) chưa có trên nền tảng | Vận hành nhận sở hữu, có HA, giám sát và runbook từ R1 | Vận hành, Tech Lead | Trước khi bật gửi thật |
 | TR-06 | Broker sự kiện SuperPlatform chưa được chọn | Chốt broker và hợp đồng kết nối trước M2; M1 dùng REST nên không bị chặn | Đầu mối nền tảng | Trước M2 |
