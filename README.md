@@ -34,6 +34,21 @@ Chạy cả bốn runtime trong container: `make up-app`. Dừng: `make down`; x
 
 Nếu port trên máy đã bị dùng, đổi port host qua biến môi trường: `NOTITEK_POSTGRES_PORT`, `NOTITEK_RABBITMQ_PORT`, `NOTITEK_REDIS_PORT`, `NOTITEK_API_PORT`, `NOTITEK_API_ADMIN_PORT` (ví dụ `NOTITEK_POSTGRES_PORT=55432 make up`, và sửa DSN tương ứng). Mất kết nối RabbitMQ làm runtime dừng với lỗi để orchestrator khởi động lại.
 
+## Hot reload khi phát triển
+
+```bash
+make dev                                   # hạ tầng + migration + dev-api, tự build lại khi sửa code
+make dev SERVICES="dev-api dev-worker"     # thêm runtime đang làm
+make dev-logs
+make dev-down                              # dừng, giữ dữ liệu và cache Go
+```
+
+- Source được mount vào container; [`air`](.air.toml) theo dõi `cmd/`, `internal/`, `config/` (bỏ qua `_test.go`) và khởi động lại runtime sau khi build xong, khoảng 3 giây cho một runtime.
+- Mọi runtime dùng chung một cache module và một cache build, nên dependency chỉ tải một lần và package không đổi không build lại. Binary và log build nằm trong tmpfs, không ghi vào repo.
+- Dùng polling vì bind mount từ Windows/macOS không báo sự kiện file ổn định; mỗi runtime tốn khoảng 3–6% CPU khi rảnh. Chỉ bật runtime đang làm.
+- Migration chạy tự động (service `migrate`) trước khi runtime khởi động. Lần đầu build image dev và tải module mất vài phút.
+- Không chạy cùng lúc với `make up-app` vì trùng port. Sửa `go.mod` thì chạy lại `make dev`.
+
 ## Kiểm tra
 
 ```bash

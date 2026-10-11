@@ -1,0 +1,73 @@
+# Development stack with hot reload.
+#   make dev                                  infrastructure + migrations + dev-api
+#   make dev SERVICES="dev-api dev-worker"     add the runtimes you work on
+#
+# Every running runtime rebuilds on each change (~3s for one, longer for all four).
+#
+# Do not run together with `make up-app`: both bind the same host ports.
+name: notitek
+
+include:
+  - compose.yaml # postgres, rabbitmq, redis (the "app" profile stays off)
+
+x-dev: &dev
+  # Built once by the migrate service, reused by every runtime.
+  image: notitek-dev
+  pull_policy: never
+  profiles: ["dev"]
+  working_dir: /src
+  volumes:
+    - ..:/src
+    # One module cache and one build cache shared by every runtime: each
+    # dependency is downloaded once and unchanged packages are never rebuilt.
+    - go-mod:/go/pkg/mod
+    - go-build:/root/.cache/go-build
+  tmpfs:
+    - /tmp/notitek:exec  # binaries and air logs (tmpfs is noexec by default); never written into the repo
+  environment:
+    NOTITEK_ENV: local
+    NOTITEK_LOG_LEVEL: debug
+    NOTITEK_SHUTDOWN_TIMEOUT: 3s
+    NOTITEK_POSTGRES_DSN: postgres://notitek:notitek@postgres:5432/notitek?sslmode=disable
+    NOTITEK_RABBITMQ_URL: amqp://notitek:notitek@rabbitmq:5672/notitek
+    NOTITEK_REDIS_ADDR: redis:6379
+  depends_on:
+    migrate: { condition: service_completed_successfully }
+    rabbitmq: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  migrate:
+    <<: *dev
+    build:
+      context: ..
+      dockerfile: Dockerfile.dev
+    pull_policy: build
+    command: ["goose", "-dir", "db/migrations", "postgres", "postgres://notitek:notitek@postgres:5432/notitek?sslmode=disable", "up"]
+    restart: "no"
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  dev-api:
+    <<: *dev
+    command: ["air", "-c", ".air.toml", "--build.cmd", "go build -o /tmp/notitek/api ./cmd/api", "--build.entrypoint", "/tmp/notitek/api"]
+    ports: ["${NOTITEK_API_PORT:-8080}:8080", "${NOTITEK_API_ADMIN_PORT:-9090}:9090"]
+
+  dev-worker:
+    <<: *dev
+    command: ["air", "-c", ".air.toml", "--build.cmd", "go build -o /tmp/notitek/worker ./cmd/worker", "--build.entrypoint", "/tmp/notitek/worker"]
+    ports: ["9091:9090"]
+
+  dev-relay:
+    <<: *dev
+    command: ["air", "-c", ".air.toml", "--build.cmd", "go build -o /tmp/notitek/relay ./cmd/relay", "--build.entrypoint", "/tmp/notitek/relay"]
+    ports: ["9092:9090"]
+
+  dev-scheduler:
+    <<: *dev
+    command: ["air", "-c", ".air.toml", "--build.cmd", "go build -o /tmp/notitek/scheduler ./cmd/scheduler", "--build.entrypoint", "/tmp/notitek/scheduler"]
+    ports: ["9093:9090"]
+
+volumes:
+  go-mod:
+  go-build:

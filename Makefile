@@ -6,6 +6,9 @@ SHELL := bash
 GOOSE_VERSION        ?= v3.28.0
 GOLANGCI_LINT_VERSION ?= v2.14.0
 COMPOSE              := docker compose -f deploy/compose.yaml
+COMPOSE_DEV          := docker compose -f deploy/compose.dev.yaml --profile dev
+# Hot reload rebuilds every running runtime on each change; run only what you work on.
+SERVICES             ?= dev-api
 POSTGRES_DSN         ?= postgres://notitek:notitek@localhost:5432/notitek?sslmode=disable
 RUNTIMES             := api worker relay scheduler
 
@@ -73,6 +76,21 @@ reset: ## Stop the stack and delete its data
 .PHONY: logs
 logs: ## Follow logs of the runtimes
 	$(COMPOSE) --profile app logs -f $(RUNTIMES)
+
+## ---- Hot reload (development) ----------------------------------------------
+
+.PHONY: dev
+dev: ## Hot reload (default dev-api): make dev SERVICES="dev-api dev-worker"
+	$(COMPOSE_DEV) up -d --build $(SERVICES)
+	@echo "Hot reload running. Logs: make dev-logs   Stop: make dev-down"
+
+.PHONY: dev-logs
+dev-logs: ## Follow logs of the hot-reload runtimes
+	$(COMPOSE_DEV) logs -f $(SERVICES)
+
+.PHONY: dev-down
+dev-down: ## Stop the hot-reload stack (keeps data and Go caches)
+	$(COMPOSE_DEV) down
 
 ## ---- Database -------------------------------------------------------------------
 

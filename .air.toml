@@ -1,0 +1,25 @@
+# Hot reload for local development (make dev). Each runtime passes its own
+# --build.cmd / --build.entrypoint; this file holds the shared watch settings.
+root = "."
+# tmpfs in deploy/compose.dev.yaml: build logs never touch the repo.
+tmp_dir = "/tmp/notitek/air"
+
+[build]
+  include_dir = ["cmd", "internal", "config"]
+  include_ext = ["go", "yaml"]
+  exclude_regex = ["_test\\.go$"]
+  # Bind mounts from Windows/macOS hosts do not deliver file events reliably.
+  poll = true
+  poll_interval = 500
+  # Coalesce bursts of saves (formatters, multi-file edits) into one rebuild.
+  delay = 300
+  stop_on_error = true
+  # Let the runtime shut down gracefully (NOTITEK_SHUTDOWN_TIMEOUT=3s in dev).
+  send_interrupt = true
+  kill_delay = "4s"
+
+[log]
+  time = false
+
+[misc]
+  clean_on_exit = true
