@@ -5,7 +5,7 @@
 **Cập nhật 11/10/2026:** PO mở rộng phạm vi R1 (DEC bản 1.4, mục 2.13): thêm 4 thông báo tài khoản User và đủ 10 mốc thông báo của Order; người nhận vận hành/CSKH; User cấp lại link khi cần gửi lại.  
 **Cập nhật lần 2, 11/10/2026 (DEC 1.6):** thêm UC-ORD-12 đến UC-ORD-16 cho 5 mốc Order chưa có mã; tên event đề xuất cũ thay bằng `type` của Notification; UC-USR-07, UC-ORD-09 lên P0 (R1); UC-ORD-04 xuống P1 (không thuộc 10 mốc R1); lời mời đi qua outbox của User.  
 **Tài liệu nền:** [BRD Notification hiện tại](<Notitek - ĐẶC TẢ YÊU CẦU NGHIỆP VỤ (BRD).md>).  
-**Phạm vi đối chiếu:** Mã nguồn hiện có của [User](../user-spf/) và [Order](../order-spf/).
+**Phạm vi đối chiếu:** Mã nguồn hiện có của [User](../../user-spf/) và [Order](../../order-spf/).
 
 ## 1. Cách đọc danh sách
 
@@ -29,7 +29,7 @@ Tên thành phần dùng theo BRD: Luồng thông báo, Đối tượng nhận t
 | Cảnh báo/yêu cầu thiết bị | UC-USR-09 | Tiếp nối chuông hiện có; hành động bảo mật ở User. |
 | Hộp tin và tra cứu | UC-NTF-13, UC-NTF-12 | Đúng ngữ cảnh tài khoản/công việc và tra kết quả theo quyền. |
 
-Các UC-NTF nền liên quan và cấu hình tối thiểu của UC-NTF-15 phục vụ các lát cắt. Xem [phạm vi](<docs/Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>), [UC ưu tiên](<docs/Notitek - ĐẶC TẢ USE CASE ƯU TIÊN.md>) và [ma trận truy vết](<docs/Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU.md>). Không coi toàn bộ UC P0 trong danh mục là phạm vi đợt đầu.
+Các UC-NTF nền liên quan và cấu hình tối thiểu của UC-NTF-15 phục vụ các lát cắt. Xem [phạm vi](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>), [UC ưu tiên](<Notitek - ĐẶC TẢ USE CASE ƯU TIÊN.md>) và [ma trận truy vết](<Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU.md>). Không coi toàn bộ UC P0 trong danh mục là phạm vi đợt đầu.
 
 Ranh giới nghiệp vụ: module nguồn xác nhận sự việc và sở hữu trạng thái thật. Notification nhận event hoặc yêu cầu gửi, chọn luồng và người nhận, áp dụng chính sách, gửi qua kênh, ghi kết quả và phát event kết quả. Một event nguồn có thể tạo nhiều **trường hợp gửi** cho các nhóm người nhận khác nhau. Notification không tự suy luận kết quả giao hàng từ vận đơn hoặc webhook kỹ thuật.
 
@@ -97,7 +97,7 @@ Timeout có thể là kết quả chưa rõ, không tự coi là thất bại đ
 
 ## 3. Luồng tích hợp từ Module User
 
-Các luồng đang gửi qua `NotificationPort` và template trong User: OTP, kích hoạt tài khoản, lời mời nhân viên/thành viên, thay đổi định danh, đổi mật khẩu và nghỉ việc. Riêng OTP hiện yêu cầu **gửi thật**, không được coi việc ghi log hoặc nhận event bất đồng bộ là thành công. Xem [NotificationPort](../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationPort.java) và [NotificationTemplates](../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationTemplates.java).
+Các luồng đang gửi qua `NotificationPort` và template trong User: OTP, kích hoạt tài khoản, lời mời nhân viên/thành viên, thay đổi định danh, đổi mật khẩu và nghỉ việc. Riêng OTP hiện yêu cầu **gửi thật**, không được coi việc ghi log hoặc nhận event bất đồng bộ là thành công. Xem [NotificationPort](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationPort.java) và [NotificationTemplates](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationTemplates.java).
 
 | Mã | Luồng / sự việc nguồn | Trường hợp gửi và điều kiện dừng chính | Hiện trạng nguồn | Ưu tiên |
 |---|---|---|---|---|
@@ -113,7 +113,7 @@ Các luồng đang gửi qua `NotificationPort` và template trong User: OTP, k�
 
 ## 4. Luồng tích hợp từ Module Order
 
-Order hiện ghi các event `order.created.v1`, `order.cancelled.v1`, `order.updated.v1`, `order.return.requested.v1`, `order.return.confirmed.v1` vào outbox. [OutboxWriter](../order-spf/src/main/java/vn/supership/superplatform/order/platform/outbox/OutboxWriter.java) ghi rõ dispatcher phát đi broker/HTTP **chưa được xây dựng**. Các mốc lấy/giao hàng có trạng thái nghiệp vụ nhưng cần event nguồn đủ rõ trước khi Notification sử dụng. Theo quyết định 11/10/2026, R1 dùng đúng 10 mốc trong hợp đồng Order; Order ghi outbox cho từng mốc và dispatcher của Order gửi sang Notification qua API, chưa dùng broker. Xem [trạng thái Order](../order-spf/src/main/java/vn/supership/superplatform/order/feature/order/internal/domain/model/OrderActionPolicy.java).
+Order hiện ghi các event `order.created.v1`, `order.cancelled.v1`, `order.updated.v1`, `order.return.requested.v1`, `order.return.confirmed.v1` vào outbox. [OutboxWriter](../../order-spf/src/main/java/vn/supership/superplatform/order/platform/outbox/OutboxWriter.java) ghi rõ dispatcher phát đi broker/HTTP **chưa được xây dựng**. Các mốc lấy/giao hàng có trạng thái nghiệp vụ nhưng cần event nguồn đủ rõ trước khi Notification sử dụng. Theo quyết định 11/10/2026, R1 dùng đúng 10 mốc trong hợp đồng Order; Order ghi outbox cho từng mốc và dispatcher của Order gửi sang Notification qua API, chưa dùng broker. Xem [trạng thái Order](../../order-spf/src/main/java/vn/supership/superplatform/order/feature/order/internal/domain/model/OrderActionPolicy.java).
 
 | Mã | Luồng / sự việc nguồn | Trường hợp gửi và điều kiện dừng chính | Hiện trạng nguồn | Ưu tiên |
 |---|---|---|---|---|
@@ -163,4 +163,4 @@ Mỗi UC ở mục 3 và 4 nên được chi tiết hóa bằng cùng một bi�
 | Kết quả | Event đầu ra nào nguồn cần nhận, trường hợp nào cần phản hồi đồng bộ |
 | Nghiệm thu | Kịch bản thành công, trùng event, sai người nhận, nguồn đổi trạng thái, nhà cung cấp lỗi |
 
-**Ghi chú BRD:** Bản 0.5 ghi nhận phạm vi sản phẩm đã chốt; giữ trạng thái riêng cho các chính sách/hợp đồng còn mở. Mã UC dùng cho phân rã, BR dùng cho yêu cầu. Mục 13.1 BRD liên kết nhóm; [bộ tài liệu triển khai](<docs/Notitek - HƯỚNG DẪN SỬ DỤNG BỘ TÀI LIỆU.md>) bổ sung UC chi tiết, SRS, trải nghiệm, hợp đồng, thiết kế và ma trận UC–BR–story–AT của đợt đầu.
+**Ghi chú BRD:** Bản 0.5 ghi nhận phạm vi sản phẩm đã chốt; giữ trạng thái riêng cho các chính sách/hợp đồng còn mở. Mã UC dùng cho phân rã, BR dùng cho yêu cầu. Mục 13.1 BRD liên kết nhóm; [bộ tài liệu triển khai](<Notitek - HƯỚNG DẪN SỬ DỤNG BỘ TÀI LIỆU.md>) bổ sung UC chi tiết, SRS, trải nghiệm, hợp đồng, thiết kế và ma trận UC–BR–story–AT của đợt đầu.

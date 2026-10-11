@@ -1,0 +1,78 @@
+# Local development stack.
+#   make up        start infrastructure only
+#   make up-app    also build and run the four Notitek runtimes
+name: notitek
+
+x-app: &app
+  profiles: ["app"]
+  restart: unless-stopped
+  environment:
+    NOTITEK_ENV: local
+    NOTITEK_LOG_LEVEL: debug
+    NOTITEK_POSTGRES_DSN: postgres://notitek:notitek@postgres:5432/notitek?sslmode=disable
+    NOTITEK_RABBITMQ_URL: amqp://notitek:notitek@rabbitmq:5672/notitek
+    NOTITEK_REDIS_ADDR: redis:6379
+  depends_on:
+    postgres: { condition: service_healthy }
+    rabbitmq: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: notitek
+      POSTGRES_PASSWORD: notitek
+      POSTGRES_DB: notitek
+    ports: ["${NOTITEK_POSTGRES_PORT:-5432}:5432"]
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notitek -d notitek"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: notitek
+      RABBITMQ_DEFAULT_PASS: notitek
+      RABBITMQ_DEFAULT_VHOST: notitek
+    ports: ["${NOTITEK_RABBITMQ_PORT:-5672}:5672", "${NOTITEK_RABBITMQ_UI_PORT:-15672}:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    ports: ["${NOTITEK_REDIS_PORT:-6379}:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    <<: *app
+    build: { context: .., dockerfile: Dockerfile, args: { RUNTIME: api } }
+    ports: ["${NOTITEK_API_PORT:-8080}:8080", "${NOTITEK_API_ADMIN_PORT:-9090}:9090"]
+
+  worker:
+    <<: *app
+    build: { context: .., dockerfile: Dockerfile, args: { RUNTIME: worker } }
+    ports: ["9091:9090"]
+
+  relay:
+    <<: *app
+    build: { context: .., dockerfile: Dockerfile, args: { RUNTIME: relay } }
+    ports: ["9092:9090"]
+
+  scheduler:
+    <<: *app
+    build: { context: .., dockerfile: Dockerfile, args: { RUNTIME: scheduler } }
+    ports: ["9093:9090"]
+
+volumes:
+  postgres-data:

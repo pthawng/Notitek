@@ -1,0 +1,17 @@
+# Code and configuration use LF so builds, containers and CI behave the same
+# on every OS. Documentation keeps its current line endings.
+*.go         text eol=lf
+*.mod        text eol=lf
+*.sum        text eol=lf
+*.sql        text eol=lf
+*.yml        text eol=lf
+*.yaml       text eol=lf
+*.json       text eol=lf
+*.py         text eol=lf
+*.sh         text eol=lf
+Makefile     text eol=lf
+Dockerfile   text eol=lf
+.gitattributes text eol=lf
+.gitignore   text eol=lf
+.dockerignore text eol=lf
+.env.example text eol=lf

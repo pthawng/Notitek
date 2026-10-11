@@ -9,7 +9,7 @@
 
 Notification là dịch vụ thông báo dùng chung của SuperPlatform. Một module gọi Notification cần biết phải cung cấp gì, Notification cam kết xử lý đến đâu, khi nào có thể coi việc gửi đạt yêu cầu và làm gì khi kết quả chưa rõ. Người nhận cần thấy đúng thông tin, đúng tài khoản và đúng phạm vi. Người vận hành cần giải thích được vì sao một tin được gửi, bị chặn, thất bại hoặc chưa có kết quả.
 
-SRS này đặc tả hành vi phần mềm quan sát và kiểm chứng được. Căn cứ nghiệp vụ là [BRD](<../Notitek - ĐẶC TẢ YÊU CẦU NGHIỆP VỤ (BRD).md>), [danh mục use case](<../Notitek - DANH MỤC USE CASE.md>), [phạm vi phát hành](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>) và [UC ưu tiên](<Notitek - ĐẶC TẢ USE CASE ƯU TIÊN.md>).
+SRS này đặc tả hành vi phần mềm quan sát và kiểm chứng được. Căn cứ nghiệp vụ là [BRD](<Notitek - ĐẶC TẢ YÊU CẦU NGHIỆP VỤ (BRD).md>), [danh mục use case](<Notitek - DANH MỤC USE CASE.md>), [phạm vi phát hành](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>) và [UC ưu tiên](<Notitek - ĐẶC TẢ USE CASE ƯU TIÊN.md>).
 
 [Hợp đồng tích hợp](<Notitek - HỢP ĐỒNG TÍCH HỢP API VÀ SỰ KIỆN.md>) phải cụ thể hóa các yêu cầu thành schema, lỗi, cơ chế xác thực và ví dụ. [Thiết kế kỹ thuật](<Notitek - THIẾT KẾ KỸ THUẬT SƠ BỘ.md>) quyết định cách triển khai. SRS không chọn sẵn broker, cơ sở dữ liệu, engine, nhà cung cấp hoặc tên endpoint.
 

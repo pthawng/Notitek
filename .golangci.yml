@@ -1,0 +1,90 @@
+version: "2"
+
+run:
+  timeout: 5m
+  build-tags: [integration]
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - contextcheck
+    - depguard
+    - errorlint
+    - exhaustive
+    - gocritic
+    - gosec
+    - misspell
+    - nilerr
+    - noctx
+    - revive
+    - unconvert
+    - unparam
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+        - name: context-as-argument
+        - name: error-return
+        - name: error-strings
+        - name: receiver-naming
+    gosec:
+      excludes:
+        - G115 # integer conversions are range-checked by config.Env.Int
+    depguard:
+      # Architecture rules from docs/Notitek - CẤU TRÚC MÃ NGUỒN.md §3.
+      rules:
+        domain-is-pure:
+          files: ["**/internal/*/domain/**"]
+          deny:
+            - pkg: github.com/pthawng/notitek/internal/platform/postgres
+              desc: domain performs no I/O
+            - pkg: github.com/pthawng/notitek/internal/platform/rabbitmq
+              desc: domain performs no I/O
+            - pkg: github.com/pthawng/notitek/internal/platform/redis
+              desc: domain performs no I/O
+            - pkg: github.com/pthawng/notitek/internal/platform/httpx
+              desc: domain performs no I/O
+            - pkg: github.com/pthawng/notitek/internal/channel
+              desc: domain imports no other module; convert in the application layer
+            - pkg: github.com/pthawng/notitek/internal/gen
+              desc: generated API types belong to adapters
+            - pkg: github.com/jackc/pgx
+              desc: domain performs no I/O
+            - pkg: net/http
+              desc: domain performs no I/O
+        channel-is-not-core:
+          files: ["**/internal/channel/**"]
+          deny:
+            - pkg: github.com/pthawng/notitek/internal/notification
+              desc: adapters classify results; only the notification core decides state
+        platform-knows-no-business:
+          files: ["**/internal/platform/**"]
+          deny:
+            - pkg: github.com/pthawng/notitek/internal/notification
+              desc: platform must not depend on business modules
+            - pkg: github.com/pthawng/notitek/internal/channel
+              desc: platform must not depend on business modules
+            - pkg: github.com/pthawng/notitek/internal/bootstrap
+              desc: platform must not depend on the composition root
+        only-bootstrap-wires:
+          files: ["**/internal/**", "!**/internal/bootstrap/**"]
+          deny:
+            - pkg: github.com/pthawng/notitek/internal/bootstrap
+              desc: only cmd/ may import the composition root
+  exclusions:
+    presets: [comments, std-error-handling]
+    rules:
+      - path: _test\.go
+        linters: [gosec, unparam, noctx]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes: [github.com/pthawng/notitek]

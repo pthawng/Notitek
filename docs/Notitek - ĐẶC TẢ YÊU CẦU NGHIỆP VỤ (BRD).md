@@ -8,7 +8,7 @@ Tài liệu mô tả người dùng cần gì và các module phải phối hợ
 
 Tài liệu liên quan: [Danh mục use case](<Notitek - DANH MỤC USE CASE.md>).
 
-Từ nghiệp vụ xuống code: [Bộ tài liệu triển khai](<docs/Notitek - HƯỚNG DẪN SỬ DỤNG BỘ TÀI LIỆU.md>), [phạm vi bản phát hành đã chốt](<docs/Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>), [use case ưu tiên](<docs/Notitek - ĐẶC TẢ USE CASE ƯU TIÊN.md>) và [backlog/nghiệm thu](<docs/Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU.md>).
+Từ nghiệp vụ xuống code: [Bộ tài liệu triển khai](<Notitek - HƯỚNG DẪN SỬ DỤNG BỘ TÀI LIỆU.md>), [phạm vi bản phát hành đã chốt](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>), [use case ưu tiên](<Notitek - ĐẶC TẢ USE CASE ƯU TIÊN.md>) và [backlog/nghiệm thu](<Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU.md>).
 
 ## 1. Cách đọc và lịch sử thay đổi
 
@@ -217,7 +217,7 @@ Mỗi phạm vi chỉ được kích hoạt khi có module/chủ nghiệp vụ s
 
 Hỗ trợ đủ 5 kênh không có nghĩa mỗi thông báo phải gửi qua cả 5. Mỗi trường hợp gửi vẫn chọn kênh chính, song song, dự phòng hoặc bổ sung theo mục đích. Ngày 08/10/2026, người yêu cầu xác nhận các lát cắt OTP (UC-USR-01), lời mời nhân viên/thành viên (UC-USR-03/04), giao thất bại (UC-ORD-05), cảnh báo bảo mật/thiết bị (UC-USR-09), cùng hộp tin và tra cứu phục vụ các luồng này. Ngày 11/10/2026 PO bổ sung thông báo tài khoản (UC-USR-02/05/06/07) và đủ 10 mốc thông báo đơn hàng theo hợp đồng Order: tạo đơn thành công, hủy, lấy hàng thất bại, đã lấy hàng, giao thất bại, đã giao, giao một phần, xác nhận chuyển hoàn, đã hoàn hàng và quá hạn SLA; đợt đầu chỉ nhắn người nhận hàng ở mốc giao thất bại. Shop SuperShip và giao diện nội bộ là điểm tích hợp ưu tiên; client Push cụ thể và app mở rộng còn cần chốt.
 
-Thông báo tài khoản và thông báo công việc được tách ngữ cảnh: đổi Shop không làm mất cảnh báo tài khoản, còn thông báo đơn phải đúng Shop/app/phạm vi. Notification tiếp nối chuông hiện có; User/Order vẫn sở hữu và kiểm tra các hành động sau khi mở. Phạm vi cụ thể và các mốc hoàn thành được quản lý tại [phạm vi bản phát hành](<docs/Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>).
+Thông báo tài khoản và thông báo công việc được tách ngữ cảnh: đổi Shop không làm mất cảnh báo tài khoản, còn thông báo đơn phải đúng Shop/app/phạm vi. Notification tiếp nối chuông hiện có; User/Order vẫn sở hữu và kiểm tra các hành động sau khi mở. Phạm vi cụ thể và các mốc hoàn thành được quản lý tại [phạm vi bản phát hành](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>).
 
 | Đợt đề xuất | Nội dung | Điều kiện hoàn thành |
 |---|---|---|
@@ -537,7 +537,7 @@ Mục tiêu tốc độ phản hồi OTP, độ trễ tin giao dịch, sản lư
 
 ## 11. Quyết định cần chốt trước đặc tả/triển khai
 
-DEC-01 đã **chốt 5 kênh và các lát cắt đợt đầu** ngày 08/10/2026. Cũng ngày 08/10/2026, **PO đã chốt DEC-01 đến DEC-12** cho đợt đầu tại [Quyết định PO cho các DEC](<docs/Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>); các điểm thuộc thẩm quyền pháp chế, tài chính, Tech Lead và vận hành được ghi là chờ xác nhận tại mục 4 của tài liệu đó. Bảng dưới giữ nguyên câu hỏi gốc để truy vết.
+DEC-01 đã **chốt 5 kênh và các lát cắt đợt đầu** ngày 08/10/2026. Cũng ngày 08/10/2026, **PO đã chốt DEC-01 đến DEC-12** cho đợt đầu tại [Quyết định PO cho các DEC](<Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>); các điểm thuộc thẩm quyền pháp chế, tài chính, Tech Lead và vận hành được ghi là chờ xác nhận tại mục 4 của tài liệu đó. Bảng dưới giữ nguyên câu hỏi gốc để truy vết.
 
 | Mã | Câu hỏi cần quyết định | Bên chủ trì | Phạm vi bị ảnh hưởng |
 |---|---|---|---|
@@ -587,15 +587,15 @@ Mã BR rút gọn trong bảng nghiệm thu/truy vết được đọc với ti�
 
 ### 13.2. Căn cứ đọc mã nguồn tại thời điểm rà soát
 
-- [NotificationPort của User](../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationPort.java): ranh giới gửi tin, OTP cần gửi thật và xử lý lỗi của bên gọi.
-- [Dữ liệu yêu cầu gửi User](../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/Notification.java) và [NotificationReceipt](../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationReceipt.java): tham chiếu, đích, mẫu, tham số, thời hạn và biên nhận nhà cung cấp kênh gửi.
-- [Template User](../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationTemplates.java): OTP, kích hoạt, lời mời, đổi mật khẩu/định danh và nghỉ việc.
-- [LoggingNotificationAdapter](../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/infrastructure/LoggingNotificationAdapter.java): chưa phải adapter gửi thật, không được dùng log làm bằng chứng đã giao.
-- [OutboxWriter của Order](../order-spf/src/main/java/vn/supership/superplatform/order/platform/outbox/OutboxWriter.java): ghi event cùng giao dịch, dispatcher chưa được xây dựng theo mô tả tại mã nguồn.
-- [CreateOrderHandler](../order-spf/src/main/java/vn/supership/superplatform/order/feature/order/internal/application/handler/CreateOrderHandler.java): mốc order.created.v1 trước bước tạo vận đơn.
-- [OrderActionPolicy](../order-spf/src/main/java/vn/supership/superplatform/order/feature/order/internal/domain/model/OrderActionPolicy.java): các trạng thái nghiệp vụ hiện có.
-- [Danh mục Application/Client/Entitlement của User](../user-spf/database-docs/data/user/business/tables/application.yaml): trách nhiệm dữ liệu ứng dụng, điều kiện sử dụng và domain.
-- [AccessContextEligibilityService](../user-spf/services/users-core-service/src/main/java/com/supership/users/authentication/application/AccessContextEligibilityService.java): điều kiện tư cách/app và đặc thù truy cập do User sở hữu.
-- [Hợp đồng Access Context](../user-spf/contracts/access-context/README.md), [ResolveDtos](../user-spf/services/users-core-service/src/main/java/com/supership/users/accesscontext/api/ResolveDtos.java), [AccessContextResolver](../user-spf/services/users-core-service/src/main/java/com/supership/users/accesscontext/application/AccessContextResolver.java): ngữ cảnh, quyết định theo hành động, scope và giới hạn sử dụng.
+- [NotificationPort của User](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationPort.java): ranh giới gửi tin, OTP cần gửi thật và xử lý lỗi của bên gọi.
+- [Dữ liệu yêu cầu gửi User](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/Notification.java) và [NotificationReceipt](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationReceipt.java): tham chiếu, đích, mẫu, tham số, thời hạn và biên nhận nhà cung cấp kênh gửi.
+- [Template User](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationTemplates.java): OTP, kích hoạt, lời mời, đổi mật khẩu/định danh và nghỉ việc.
+- [LoggingNotificationAdapter](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/infrastructure/LoggingNotificationAdapter.java): chưa phải adapter gửi thật, không được dùng log làm bằng chứng đã giao.
+- [OutboxWriter của Order](../../order-spf/src/main/java/vn/supership/superplatform/order/platform/outbox/OutboxWriter.java): ghi event cùng giao dịch, dispatcher chưa được xây dựng theo mô tả tại mã nguồn.
+- [CreateOrderHandler](../../order-spf/src/main/java/vn/supership/superplatform/order/feature/order/internal/application/handler/CreateOrderHandler.java): mốc order.created.v1 trước bước tạo vận đơn.
+- [OrderActionPolicy](../../order-spf/src/main/java/vn/supership/superplatform/order/feature/order/internal/domain/model/OrderActionPolicy.java): các trạng thái nghiệp vụ hiện có.
+- [Danh mục Application/Client/Entitlement của User](../../user-spf/database-docs/data/user/business/tables/application.yaml): trách nhiệm dữ liệu ứng dụng, điều kiện sử dụng và domain.
+- [AccessContextEligibilityService](../../user-spf/services/users-core-service/src/main/java/com/supership/users/authentication/application/AccessContextEligibilityService.java): điều kiện tư cách/app và đặc thù truy cập do User sở hữu.
+- [Hợp đồng Access Context](../../user-spf/contracts/access-context/README.md), [ResolveDtos](../../user-spf/services/users-core-service/src/main/java/com/supership/users/accesscontext/api/ResolveDtos.java), [AccessContextResolver](../../user-spf/services/users-core-service/src/main/java/com/supership/users/accesscontext/application/AccessContextResolver.java): ngữ cảnh, quyết định theo hành động, scope và giới hạn sử dụng.
 
-Tên event, chính sách kênh cụ thể và phạm vi mở rộng chưa xác nhận vẫn được đánh dấu đề xuất. Phạm vi hỗ trợ 5 kênh và các lát cắt đợt đầu đã xác nhận tại DEC-01. Truy vết UC–BR–SRS–story–AT của đợt đầu nằm ở [backlog/nghiệm thu](<docs/Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU.md>). Khi mã nguồn hoặc hợp đồng thay đổi, cập nhật phần đối chiếu; không dùng mô tả hiện trạng thay phê duyệt nghiệp vụ.
+Tên event, chính sách kênh cụ thể và phạm vi mở rộng chưa xác nhận vẫn được đánh dấu đề xuất. Phạm vi hỗ trợ 5 kênh và các lát cắt đợt đầu đã xác nhận tại DEC-01. Truy vết UC–BR–SRS–story–AT của đợt đầu nằm ở [backlog/nghiệm thu](<Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU.md>). Khi mã nguồn hoặc hợp đồng thay đổi, cập nhật phần đối chiếu; không dùng mô tả hiện trạng thay phê duyệt nghiệp vụ.
