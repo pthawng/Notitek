@@ -90,7 +90,7 @@ Các use case ưu tiên của đợt đầu dưới đây phân rã [phạm vi �
 
 **Luồng chính:**
 
-1. User cung cấp cảnh báo/yêu cầu theo hợp đồng. Phương án nhận event hoặc tiếp nối feed User hiện có do Tech Lead chốt.
+1. User cung cấp cảnh báo/yêu cầu theo hợp đồng. User phát event cảnh báo theo hợp đồng; Notitek là nguồn duy nhất của hộp tin.
 2. Chuông/hộp tin Shop hiển thị cảnh báo tài khoản và trạng thái có thể hành động do User cấp.
 3. Người dùng mở tin; trạng thái đọc được ghi độc lập với trạng thái yêu cầu bảo mật.
 4. Khi xác nhận hoặc báo không nhận ra thiết bị, ứng dụng gọi User. User kiểm tra điều kiện và thực hiện quyết định.
@@ -98,7 +98,7 @@ Các use case ưu tiên của đợt đầu dưới đây phân rã [phạm vi �
 
 **Ngoại lệ:** Yêu cầu đã xử lý/hết hiệu lực vẫn hiển thị kết quả phù hợp, không còn nút hành động trái điều kiện nguồn. Đổi Shop không chuyển cảnh báo sang tài khoản khác. Đăng xuất/đổi tài khoản không giữ dữ liệu người trước.
 
-**Hậu điều kiện:** Hành động bảo mật nằm tại User; hộp tin có trạng thái đọc riêng; không phát lại cảnh báo trùng từ feed và event trong thời gian chuyển đổi.
+**Hậu điều kiện:** Hành động bảo mật nằm tại User; hộp tin có trạng thái đọc riêng; phát lại event không tạo cảnh báo trùng.
 
 **Truy vết:** BR-INT-01/06, BR-REC-03/06, BR-CHN-05, BR-SEC-03/06; SRS-F05/08/10/13; ST-08; AT-08/13/14. **DEC:** 02, 03, 09, 12.
 

@@ -14,10 +14,10 @@ Người yêu cầu xác nhận định hướng PO trong cuộc trao đổi ng�
 | PO-02 | Đợt đầu hỗ trợ In-app, Push, Email, SMS và Zalo ZNS. Các lát cắt được làm lần lượt; nghiệm thu đợt đầu vẫn đủ năm kênh. |
 | PO-03 | Chọn OTP, lời mời nhân viên/thành viên, giao thất bại và cảnh báo bảo mật/thiết bị làm các lát cắt đầu tiên. |
 | PO-04 | Tách thông báo tài khoản với thông báo công việc theo Shop/tổ chức/app. Đổi Shop không làm mất cảnh báo tài khoản; thông báo đơn không lộ sang Shop khác. |
-| PO-05 | Dùng lại định danh, tư cách, Application/Client và phân quyền của User/Authorization; tiếp nối chuông thông báo Shop hiện có. |
+| PO-05 | Dùng lại định danh, tư cách, Application/Client và phân quyền của User/Authorization; nối chuông thông báo Shop hiện có vào hộp tin Notitek. |
 | PO-06 | Các phụ thuộc User, Order, frontend và vận hành trở thành công việc được giao trong cùng kế hoạch tích hợp. |
 | PO-07 | Hoàn thành phải có bằng chứng từ đầu đến cuối, gồm gửi thật, mở đúng hành động, truy vết và xử lý ngoại lệ. |
-| PO-08 | Kiểm kê và chuyển đổi từng luồng ZNS đang vận hành; có điểm chuyển trách nhiệm gửi giữa hệ thống cũ và mới. |
+| PO-08 | Đã loại bỏ (09/10/2026): Notitek là hệ thống mới, không có hệ thống thông báo/ZNS cũ cần kiểm kê hoặc chuyển đổi. OA và mẫu ZNS được đăng ký mới. |
 | PO-09 | Đo khả năng hoàn thành xác thực, tiếp nhận lời mời, thời gian xử lý vấn đề giao hàng, chất lượng gửi và công sức tích hợp luồng mới. |
 
 Các quyết định này chốt phạm vi và cách tổ chức sản phẩm. Chúng không tự xác nhận tên event, người nhận vận hành, nhà cung cấp, mẫu kênh, SLA hoặc ngân sách cụ thể.
@@ -63,7 +63,7 @@ Ngày 08/10/2026, PO đã chốt cả 12 DEC dưới đây tại [Quyết địn
 | DEC-08 | Chủ sở hữu ngân sách, bên kiểm soát, hạn mức và phản hồi khi bị chặn | Chủ ngân sách, PO, Tech Lead | Gửi thật qua kênh phát sinh phí. |
 | DEC-09 | Phân loại dữ liệu, thời gian lưu, quyền xem/xóa và audit | Chủ dữ liệu, PO, vận hành | Lưu dữ liệu thật và xuất lịch sử. |
 | DEC-10 | Bằng chứng từng kênh, kết quả tổng hợp và điều kiện dự phòng | Notification, chủ nguồn, vận hành | Nghiệm thu kết quả và chuyển kênh. |
-| DEC-11 | Mẫu/định danh ZNS cũ, kiểm kê nguồn gửi và điểm chuyển đổi | Vận hành hiện tại, chủ brand | Chuyển đổi gửi thật từ luồng cũ. |
+| DEC-11 | Đã hủy: không có hệ thống cũ cần chuyển đổi | — | — |
 | DEC-12 | Hành động Notification trong catalog quyền và người được cấp | User/Authorization, PO | Truy cập hộp tin/quản trị/vận hành. |
 
 ## 5 Các mốc hoàn thành
@@ -73,7 +73,7 @@ Ngày 08/10/2026, PO đã chốt cả 12 DEC dưới đây tại [Quyết địn
 | M0 | Hoàn thiện UC, hợp đồng, trải nghiệm và thiết kế cho lát cắt đầu | Story đạt điều kiện bắt đầu trong [backlog](<Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU.md>); bộ ví dụ hợp đồng thống nhất. |
 | M1 | OTP và lời mời User chạy từ đầu đến cuối | SMS/Email thực, phản hồi đúng, link tới User, bí mật không lộ và lỗi không đảo nghiệp vụ đã commit. |
 | M2 | Giao thất bại và cảnh báo thiết bị trong trải nghiệm đã chọn | Có đường phát Order, In-app/Push/ZNS thực, đúng phạm vi, hành động vẫn do nguồn xử lý. |
-| M3 | Nghiệm thu đợt đầu và chuyển đổi vận hành | Đủ năm kênh, ngoại lệ được kiểm chứng, tra cứu được, luồng cũ/mới chuyển có kiểm soát. |
+| M3 | Nghiệm thu đợt đầu | Đủ năm kênh, ngoại lệ được kiểm chứng, tra cứu được, có quy trình vận hành. |
 
 ## 6 Chỉ số sản phẩm
 
