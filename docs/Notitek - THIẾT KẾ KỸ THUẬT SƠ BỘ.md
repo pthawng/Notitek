@@ -1,8 +1,8 @@
 # Notitek - THIẾT KẾ KỸ THUẬT SƠ BỘ
 
-**Phiên bản:** 0.3. **Ngày:** 09/10/2026. **Trạng thái:** Mô hình logic và hạng mục thiết kế để Tech Lead chốt.
+**Phiên bản:** 0.5. **Ngày:** 11/10/2026. Bản 0.5: cập nhật trạng thái quyết định (stack Go/RabbitMQ nội bộ/PostgreSQL đã chốt tại ADR-01; còn chờ nhà cung cấp và schema vật lý). Bản 0.4: ADR-02 theo quyết định A2 (R1 REST từ dispatcher outbox nguồn, broker để sau); hợp đồng R1 tại [API v1](api/README.md). **Trạng thái:** Mô hình logic và hạng mục thiết kế để Tech Lead chốt.
 
-Thiết kế hiện xác định ranh giới xử lý và dữ liệu cần giải thích các use case. Nó chưa chọn stack, engine điều phối, nhà cung cấp, broker, schema vật lý hoặc kiến trúc triển khai. Tech Lead hoàn thiện các quyết định dưới đây từ [SRS](<Notitek - ĐẶC TẢ YÊU CẦU PHẦN MỀM (SRS).md>) và [hợp đồng](<Notitek - HỢP ĐỒNG TÍCH HỢP API VÀ SỰ KIỆN.md>) trước khi code phần phụ thuộc.
+Thiết kế hiện xác định ranh giới xử lý và dữ liệu cần giải thích các use case. Stack đã chốt tại ADR-01 (tự xây bằng Go, RabbitMQ làm hàng đợi nội bộ, PostgreSQL). Broker liên module hoãn sang phân kỳ sau theo quyết định A2. Các điểm còn chờ là nhà cung cấp SMS/Email (CF-12), schema vật lý và kiến trúc triển khai. Tech Lead hoàn thiện các quyết định dưới đây từ [SRS](<Notitek - ĐẶC TẢ YÊU CẦU PHẦN MỀM (SRS).md>) và [hợp đồng](<Notitek - HỢP ĐỒNG TÍCH HỢP API VÀ SỰ KIỆN.md>) trước khi code phần phụ thuộc.
 
 ## 1 Các trách nhiệm kỹ thuật
 
@@ -36,7 +36,7 @@ Các phần này là trách nhiệm logic, không bắt buộc trở thành các
 | Mã | Quyết định | Đầu vào và tiêu chí đánh giá |
 |---|---|---|
 | ADR-01 | **Đã chốt (PO, 09/10/2026): tự xây lõi điều phối bằng Go**; kênh mở rộng qua Adapter/Strategy. Không dùng Novu hay giải pháp điều phối có sẵn. | Lý do: stack đã chốt (Go, RabbitMQ, PostgreSQL), hợp đồng OTP đồng bộ và Access Context của SuperPlatform. Tech Lead vẫn viết ADR chính thức ghi phương án đã cân nhắc. |
-| ADR-02 | Phương thức nhận lệnh và phát/nhận event bền vững | Hợp đồng User/Order, replay, chống trùng, cửa sổ lỗi; không mặc định phải có broker cụ thể. |
+| ADR-02 | Phương thức nhận lệnh và phát/nhận event bền vững | **R1 đã chốt (PO, 11/10/2026, A2):** mọi nguồn gọi REST `/v1/notifications`; thông báo async đi từ outbox của nguồn qua dispatcher của nguồn, retry nguyên body cùng reference. Phần còn lại của ADR (chọn broker liên module, ánh xạ event → profile) hoãn đến phân kỳ sau. |
 | ADR-03 | Cách lưu và bảo vệ dữ liệu, gồm bí mật tạm thời | DEC-09, thời gian xử lý/thử lại, yêu cầu tra cứu, audit và xóa. |
 | ADR-04 | Mô hình kết quả, chuyển trạng thái và tổng hợp | DEC-10, callback trễ/trùng/xung đột, kết quả một phần, In-app và đọc. |
 | ADR-05 | Cách nhận/tra và thu hồi đích Push | Chủ sở hữu thiết bị, client được chọn, đổi chủ thiết bị và phản hồi token lỗi. |
@@ -58,7 +58,7 @@ ADR cần ghi lựa chọn, phương án đã cân nhắc, hệ quả, người 
 
 ## 5 Artifact kỹ thuật trước code
 
-Tech Lead bàn giao sơ đồ thành phần và tương tác cho các lát cắt, OpenAPI/schema event, bảng chuyển trạng thái, ERD/từ điển dữ liệu, migration, thiết kế bảo vệ bí mật và quyết định kiến trúc liên quan. Cùng QA xác định kiểm thử hợp đồng, phục hồi lỗi và phân quyền; cùng vận hành chốt cấu hình môi trường, quan sát và hướng dẫn xử lý tồn đọng/chưa rõ.
+Tech Lead bàn giao sơ đồ thành phần và tương tác cho các lát cắt, review OpenAPI R1 đã có (schema event chỉ khi bắt đầu phân kỳ broker), bảng chuyển trạng thái, ERD/từ điển dữ liệu, migration, thiết kế bảo vệ bí mật và quyết định kiến trúc liên quan. Cùng QA xác định kiểm thử hợp đồng, phục hồi lỗi và phân quyền; cùng vận hành chốt cấu hình môi trường, quan sát và hướng dẫn xử lý tồn đọng/chưa rõ.
 
 ## 6 Nguyên tắc mở rộng
 

@@ -1,0 +1,25 @@
+{
+  "source_ref": "user.device_alert-001",
+  "type": "user.device_alert",
+  "type_version": 1,
+  "mode": "async",
+  "occurred_at": "2026-10-11T10:00:00+07:00",
+  "context": {
+    "context_type": "ACCOUNT",
+    "application_id": "app-shop-web"
+  },
+  "recipients": [
+    {
+      "kind": "ACCOUNT",
+      "recipient_ref": "owner-demo",
+      "account_id": "account-demo"
+    }
+  ],
+  "data": {
+    "alert_id": "alert-demo",
+    "device_label": "Demo browser",
+    "location_label": "Demo location"
+  },
+  "send_deadline": "2026-10-11T10:15:00+07:00",
+  "expires_at": "2026-10-11T10:15:00+07:00"
+}

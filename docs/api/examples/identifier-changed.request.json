@@ -1,0 +1,23 @@
+{
+  "source_ref": "user.identifier_changed-001",
+  "type": "user.identifier_changed",
+  "type_version": 1,
+  "mode": "async",
+  "occurred_at": "2026-10-11T10:00:00+07:00",
+  "context": {
+    "context_type": "ACCOUNT",
+    "application_id": "app-shop-web"
+  },
+  "recipients": [
+    {
+      "kind": "CONTACT",
+      "recipient_ref": "previous-phone",
+      "phone": "+84900000000"
+    }
+  ],
+  "data": {
+    "identifier_type": "PHONE",
+    "masked_new_value": "+84*****0001"
+  },
+  "send_deadline": "2026-10-12T10:00:00+07:00"
+}

@@ -1,7 +1,7 @@
 # Notitek - ĐẶC TẢ YÊU CẦU NGHIỆP VỤ (BRD)
 
-**Phiên bản:** 0.6 - chốt định hướng sản phẩm, các lát cắt đợt đầu và DEC-01 đến DEC-12 ngày 08/10/2026.  
-**Trạng thái:** Phạm vi sản phẩm đợt đầu đã xác nhận: đủ 5 kênh, OTP, lời mời nhân viên/thành viên, giao thất bại và cảnh báo bảo mật/thiết bị; tiếp nối trải nghiệm Shop và nội bộ. Các DEC và thông số khởi điểm đã được PO chốt tại docs/Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md; schema hợp đồng và một số xác nhận của bên sở hữu còn cần hoàn thiện.  
+**Phiên bản:** 0.7 - bổ sung phạm vi đợt đầu ngày 11/10/2026: 4 thông báo tài khoản User, đủ 10 mốc thông báo Order, người nhận vận hành/CSKH.  
+**Trạng thái:** Phạm vi sản phẩm đợt đầu đã xác nhận: đủ 5 kênh, OTP, lời mời nhân viên/thành viên, thông báo tài khoản (kích hoạt, mật khẩu, định danh đăng nhập, nghỉ việc), 10 mốc thông báo đơn hàng (gồm giao thất bại) và cảnh báo bảo mật/thiết bị; tiếp nối trải nghiệm Shop và nội bộ. Các DEC và thông số khởi điểm đã được PO chốt tại docs/Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md; schema hợp đồng và một số xác nhận của bên sở hữu còn cần hoàn thiện.  
 **Đối tượng đọc:** Chủ nghiệp vụ, người dùng, quản trị viên, nhóm User/Order/các module nguồn, BA, phát triển và kiểm thử.
 
 Tài liệu mô tả người dùng cần gì và các module phải phối hợp thế nào. API, cấu trúc event, cơ chế xử lý và công nghệ được đặc tả trong SRS sau khi các quyết định nghiệp vụ liên quan được chốt.
@@ -33,6 +33,7 @@ Một use case có thể cần nhiều nhóm BR. Đợt đầu đã xác nhận 
 | 0.4 | 06/10/2026 | Chuẩn hóa tên gọi các thành phần theo nghiệp vụ SPF; giữ nguyên mô hình, chức năng, phạm vi và mã BR/UC/AC. |
 | 0.5 | 08/10/2026 | Người yêu cầu chốt định hướng PO và các lát cắt OTP, lời mời, giao thất bại, cảnh báo thiết bị; giữ 5 kênh, tách ngữ cảnh tài khoản/công việc, làm rõ ranh giới nguồn và Notification. Bổ sung UC-USR-09 và bộ tài liệu xuống triển khai; lưu bản 0.4 tại thời điểm chốt phạm vi. |
 | 0.6 | 08/10/2026 | PO chốt DEC-01 đến DEC-12 và giá trị khởi điểm SRS-P01 đến SRS-P12 tại tài liệu Quyết định PO cho các DEC; mục 11 dẫn chiếu kết quả, giữ câu hỏi gốc. |
+| 0.7 | 11/10/2026 | PO mở rộng đợt đầu (Quyết định PO bản 1.4, mục 2.13): thêm thông báo tài khoản UC-USR-02/05/06/07 và đủ 10 mốc Order; Order cung cấp liên hệ người nhận hàng cùng sự việc, Notification không tra ngược Order; thêm nhóm người nhận vận hành/CSKH theo quyền; User cấp lại link khi cần gửi lại. |
 
 ## 2. Bối cảnh, mục tiêu và căn cứ
 
@@ -214,7 +215,7 @@ Mỗi phạm vi chỉ được kích hoạt khi có module/chủ nghiệp vụ s
 | SMS | Gửi tin nhắn tới số điện thoại. | Số điện thoại hợp lệ, định danh gửi và điều kiện kênh được duyệt. |
 | Zalo | Gửi thông báo qua Zalo ZNS theo phạm vi kênh đang mô tả trong BRD. | Liên hệ, mẫu, định danh gửi và điều kiện nhà cung cấp kênh gửi phù hợp. |
 
-Hỗ trợ đủ 5 kênh không có nghĩa mỗi thông báo phải gửi qua cả 5. Mỗi trường hợp gửi vẫn chọn kênh chính, song song, dự phòng hoặc bổ sung theo mục đích. Ngày 08/10/2026, người yêu cầu xác nhận các lát cắt OTP (UC-USR-01), lời mời nhân viên/thành viên (UC-USR-03/04), giao thất bại (UC-ORD-05), cảnh báo bảo mật/thiết bị (UC-USR-09), cùng hộp tin và tra cứu phục vụ các luồng này. Shop SuperShip và giao diện nội bộ là điểm tích hợp ưu tiên; client Push cụ thể và app mở rộng còn cần chốt.
+Hỗ trợ đủ 5 kênh không có nghĩa mỗi thông báo phải gửi qua cả 5. Mỗi trường hợp gửi vẫn chọn kênh chính, song song, dự phòng hoặc bổ sung theo mục đích. Ngày 08/10/2026, người yêu cầu xác nhận các lát cắt OTP (UC-USR-01), lời mời nhân viên/thành viên (UC-USR-03/04), giao thất bại (UC-ORD-05), cảnh báo bảo mật/thiết bị (UC-USR-09), cùng hộp tin và tra cứu phục vụ các luồng này. Ngày 11/10/2026 PO bổ sung thông báo tài khoản (UC-USR-02/05/06/07) và đủ 10 mốc thông báo đơn hàng theo hợp đồng Order: tạo đơn thành công, hủy, lấy hàng thất bại, đã lấy hàng, giao thất bại, đã giao, giao một phần, xác nhận chuyển hoàn, đã hoàn hàng và quá hạn SLA; đợt đầu chỉ nhắn người nhận hàng ở mốc giao thất bại. Shop SuperShip và giao diện nội bộ là điểm tích hợp ưu tiên; client Push cụ thể và app mở rộng còn cần chốt.
 
 Thông báo tài khoản và thông báo công việc được tách ngữ cảnh: đổi Shop không làm mất cảnh báo tài khoản, còn thông báo đơn phải đúng Shop/app/phạm vi. Notification tiếp nối chuông hiện có; User/Order vẫn sở hữu và kiểm tra các hành động sau khi mở. Phạm vi cụ thể và các mốc hoàn thành được quản lý tại [phạm vi bản phát hành](<docs/Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>).
 
@@ -540,7 +541,7 @@ DEC-01 đã **chốt 5 kênh và các lát cắt đợt đầu** ngày 08/10/202
 
 | Mã | Câu hỏi cần quyết định | Bên chủ trì | Phạm vi bị ảnh hưởng |
 |---|---|---|---|
-| DEC-01 | Đã xác nhận 5 kênh ngày 06/10/2026. Ngày 08/10/2026, người yêu cầu chốt OTP, lời mời nhân viên/thành viên, giao thất bại và cảnh báo thiết bị; hộp tin/tra cứu và các năng lực nền phục vụ các lát cắt. Shop SuperShip và giao diện nội bộ là điểm tích hợp ưu tiên. Còn cần chốt client Push cụ thể, app mở rộng và phân kỳ các năng lực ngoài đợt đầu. | Chủ sản phẩm + User/Order/Notification | Phạm vi bản phát hành tại docs/Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md; không coi mọi UC P0 dài hạn là cam kết đợt đầu. |
+| DEC-01 | Đã xác nhận 5 kênh ngày 06/10/2026. Ngày 08/10/2026, người yêu cầu chốt OTP, lời mời nhân viên/thành viên, giao thất bại và cảnh báo thiết bị; hộp tin/tra cứu và các năng lực nền phục vụ các lát cắt. Ngày 11/10/2026 PO bổ sung 4 thông báo tài khoản User và đủ 10 mốc Order. Shop SuperShip và giao diện nội bộ là điểm tích hợp ưu tiên. Còn cần chốt client Push cụ thể, app mở rộng và phân kỳ các năng lực ngoài đợt đầu. | Chủ sản phẩm + User/Order/Notification | Phạm vi bản phát hành tại docs/Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md; không coi mọi UC P0 dài hạn là cam kết đợt đầu. |
 | DEC-02 | Event nguồn, thời điểm commit, mức đơn/chặng và cách phát outbox; yêu cầu gửi trực tiếp giữ hay thay bằng hợp đồng nào? | Chủ từng module nguồn + Notification | Mọi luồng tích hợp; không tự dùng tên event đề xuất như hợp đồng thật. |
 | DEC-03 | Ai nhận mỗi trường hợp; hợp đồng bản đọc/nhóm nhận thông báo từ User/nguồn, độ mới, điều kiện quyền cho xử lý nền và ngoại lệ liên hệ cũ/người nghỉ việc? | Chủ nghiệp vụ + User/phân quyền | Dùng mô hình User hiện có; chốt dữ liệu tích hợp, không tạo lại hệ thống người dùng/quyền. |
 | DEC-04 | Luồng nào bắt buộc, kênh nào cho phép, đồng ý Marketing lấy ở đâu và chặn liên hệ xử lý thế nào? | Chủ nghiệp vụ + bảo vệ dữ liệu | CLS/PREF, không mặc định mọi tin giao dịch bắt buộc. |

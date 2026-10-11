@@ -1,6 +1,6 @@
 # Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU
 
-**Phiên bản:** 0.2. **Ngày:** 08/10/2026. **Chủ trì:** PO cùng Tech Lead và QA.
+**Phiên bản:** 0.4. **Ngày:** 11/10/2026. Bản 0.4: đồng bộ DEC 1.6 — phụ thuộc ST-05/06/08/09/14/15 trỏ tới bản nháp hộp tin/Push, tra cứu vận hành, CF-11/CF-12; truy vết ST-14/ST-15 tới đủ UC; thêm AT-38 đến AT-41; ràng buộc mốc M1/M2. Bản 0.3: thêm ST-14, ST-15 và AT-29 đến AT-37 theo A1–A8/B1 (DEC 1.4 mục 2.13); ST-04 dùng REST từ dispatcher outbox. **Chủ trì:** PO cùng Tech Lead và QA.
 
 Backlog tổ chức theo các lát cắt đã chốt trong [phạm vi](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>). Story có bên chịu trách nhiệm, phụ thuộc và kết quả nghiệm thu; đội tách task code/kiểm thử sau khi chốt hợp đồng và thiết kế. Không gán lịch sprint hoặc effort trước khi đội xác nhận năng lực và phụ thuộc.
 
@@ -9,40 +9,46 @@ Backlog tổ chức theo các lát cắt đã chốt trong [phạm vi](<Notitek 
 | Story | Kết quả và công việc | Bên thực hiện | Phụ thuộc và điều kiện bắt đầu | Mốc |
 |---|---|---|---|---|
 | ST-01 | Cấu hình tối thiểu luồng/mẫu/kênh theo phạm vi, phiên bản và kiểm tra trước kích hoạt | Notification, vận hành | DEC-07/12; mẫu/cấu hình hợp lệ; phương thức quản trị được chọn | M0 |
-| ST-02 | User gửi OTP qua Notification và nhận đúng kết quả | User, Notification, vận hành SMS | DEC-02/05/06/08/09/10; hợp đồng gửi/tra/hủy và xử lý bí mật | M1 |
-| ST-03 | Lời mời nhân viên/thành viên gửi email sau commit và mở đúng User | User, Notification, frontend liên quan | Hợp đồng User, mẫu/link, kết nối Email, chính sách lưu/hạn gửi | M1 |
-| ST-04 | Order phát sự việc giao thất bại và chỉ dẫn hủy qua đường tích hợp bền vững | Order, Notification | DEC-02/03; event/version/reference và người nhận/căn cứ; thiết kế đường phát | M2 |
-| ST-05 | Shop xem thông báo đơn đúng phạm vi và mở Order | Notification, Shop FE, User/Authorization | ST-04; hợp đồng In-app/quyền/ngữ cảnh; UX-01/02 | M2 |
-| ST-06 | Push tới đúng client/app/người | Notification, chủ app/thiết bị, frontend | Client Push, chủ đích gửi, hợp đồng thiết bị và cấu hình kênh được chốt | M2 |
+| ST-02 | User gửi OTP qua Notification (SMS hoặc Email theo đích) và nhận đúng kết quả | User, Notification, vận hành SMS | DEC-02/05/06/08/09/10; hợp đồng gửi/tra/hủy và xử lý bí mật | M1 |
+| ST-03 | Lời mời nhân viên/thành viên gửi qua outbox của User (Email hoặc SMS) và mở đúng User | User, Notification, frontend liên quan | Hợp đồng User, mẫu/link, kết nối Email, chính sách lưu/hạn gửi | M1 |
+| ST-04 | Dispatcher outbox của Order gọi REST `POST /v1/notifications` cho mốc giao thất bại (kèm liên hệ người nhận) và `POST /v1/notifications/cancel` khi lần thất bại được giải quyết | Order, Notification | DEC-02/03; profile `order.delivery_failed`; dispatcher outbox (CF-04); OAuth2 client credentials (CF-09) | M2 |
+| ST-05 | Shop xem thông báo đơn đúng phạm vi và mở Order | Notification, Shop FE, User/Authorization | ST-04; [hộp tin](api/inbox-and-push.md), quyền/ngữ cảnh; API resolve người nhận của User (CF-11); UX-01/02 | M2 |
+| ST-06 | Push tới đúng client/app/người | Notification, chủ app/thiết bị, frontend | Client Push, chủ đích gửi, [đăng ký Push](api/inbox-and-push.md) và cấu hình kênh được chốt | M2 |
 | ST-07 | Người nhận hàng nhận ZNS, dùng SMS dự phòng đúng chính sách | Notification, Order, vận hành | ST-04; mẫu/định danh gửi, DEC-04/08/10; OA và mẫu ZNS đăng ký mới được Zalo duyệt (CF-08); điều kiện dự phòng | M2 |
-| ST-08 | Chuông Shop nối vào hộp tin Notitek, hiển thị cảnh báo User và trạng thái đọc phù hợp | Shop FE, User, Notification | Hợp đồng event và khóa đối chiếu ID; UX-01/03; chính sách ngữ cảnh/đọc | M2 |
-| ST-09 | Vận hành tra cứu được tiến trình, lỗi/chưa rõ và cấu hình | Notification, frontend vận hành, User/Authorization | Hợp đồng tra cứu, quyền xem, chính sách dữ liệu/audit; UX-04 | M1 đến M3 |
+| ST-08 | Chuông Shop nối vào hộp tin Notitek, hiển thị cảnh báo User và trạng thái đọc phù hợp | Shop FE, User, Notification | Profile `user.device_alert` qua REST và khóa đối chiếu ID; [hộp tin](api/inbox-and-push.md); UX-01/03; chính sách ngữ cảnh/đọc | M2 |
+| ST-09 | Vận hành tra cứu được tiến trình, lỗi/chưa rõ và cấu hình | Notification, frontend vận hành, User/Authorization | [Tra cứu vận hành](api/provider-webhooks-and-ops.md) theo `subject_ref` (B10), quyền xem, chính sách dữ liệu/audit; UX-04 | M1 đến M3 |
 | ST-10 | Đã loại bỏ: không có hệ thống cũ cần chuyển đổi (09/10/2026). Giữ mã để không đổi số story | — | — | — |
 | ST-11 | Hoàn thiện và kiểm chứng hợp đồng/thiết kế cho từng lát cắt | Tech Lead các bên, BA, QA | UC/SRS; OpenAPI/schema, ví dụ, ADR và thiết kế dữ liệu phần liên quan | M0 và từng lát cắt |
-| ST-12 | Nghiệm thu đầy đủ năm kênh và các ngoại lệ của đợt đầu | QA, PO nguồn/Notification, vận hành | ST-02 đến ST-09; mục tiêu NFR, môi trường và cấu hình gửi thật được xác nhận | M3 |
+| ST-12 | Nghiệm thu đầy đủ năm kênh và các ngoại lệ của đợt đầu | QA, PO nguồn/Notification, vận hành | ST-02 đến ST-09, ST-14, ST-15; mục tiêu NFR, môi trường và cấu hình gửi thật được xác nhận | M3 |
 | ST-13 | Đo giá trị sản phẩm và công sức tích hợp luồng mới | PO, User, Order, Notification, vận hành | Mốc đo, dữ liệu nguồn, cách tính và quyền sử dụng dữ liệu được chốt | M1 đến M3 |
+| ST-14 | User gửi bốn thông báo tài khoản (kích hoạt, đổi mật khẩu, đổi định danh, nghỉ việc), OTP qua Email, lời mời qua SMS và lời mời nhân viên; cung cấp API cấp lại link lời mời/kích hoạt | User, Notification, vận hành Email/SMS | DEC 1.6 mục 2.13 (A6, B1); profile `user.*`; outbox User; API cấp lại link (CF-10); CF-09; nhà cung cấp SMS/Email (CF-12) | M1 |
+| ST-15 | Order phát chín mốc còn lại qua dispatcher outbox REST; Shop nhận In-app/Push, vận hành nhận In-app qua `ORDER_OPS_ALERT_RECEIVERS` | Order, Notification, User/Authorization, Shop FE | ST-04/05; A7/A8; ghi outbox từ webhook tracking và phát hiện SLA (CF-04); quyền `notification.order_ops_alert.receive` (CF-07); API resolve người nhận (CF-11); CF-09 | M2 |
 
 ST-11 được tách theo lát cắt, không là công việc làm hết kiến trúc toàn nền tảng trước khi bắt đầu. ST-09 cung cấp tra cứu cần thiết ngay khi có gửi thật; không chờ mọi màn hình quản trị nâng cao.
 
+**Ràng buộc mốc:** M1 gồm ST-14 nên không thể nghiệm thu trước 22/10/2026 (phụ thuộc CF-10). M2 phụ thuộc CF-04, hạn này đang chờ PO Order đánh giá lại. Việc cần làm: **PO gắn ngày cho M0–M3** sau khi các bên xác nhận hạn CF.
+
 ## 2 Ma trận truy vết cho đợt đầu
 
-Bảng đồng bộ với SRS 1.0 sau PO review; liên kết phần được chọn, không tuyên bố đã nghiệm thu toàn bộ BRD dài hạn. Mã BR/SRS rút gọn với dấu slash giữ nguyên tiền tố của mục đầu.
+Bảng đồng bộ với SRS 1.4; liên kết phần được chọn, không tuyên bố đã nghiệm thu toàn bộ BRD dài hạn. Mã BR/SRS rút gọn với dấu slash giữ nguyên tiền tố của mục đầu.
 
 | Story | UC | BR chính | SRS | UX | AT |
 |---|---|---|---|---|---|
 | ST-01 | UC-NTF-15, UC-NTF-04/07/08 | BR-CAT-04, BR-TPL-01/03, BR-CFG-01/02/03/05 | SRS-F03/04/12/15/20/21 | UX-05 | AT-17/18/24/27 |
-| ST-02 | UC-USR-01, UC-NTF-02/03/09/10/11 | BR-INT-02/05, BR-TRG-02/05, BR-TIME-01/02, BR-SEC-01/05, BR-OPS-04 | SRS-F01/02/03/04/05/06/07/09/13/14/15/18/20/21 | Theo UI User hiện có | AT-01/02/03/04/19/21/22/23/28 |
-| ST-03 | UC-USR-03/04 | BR-INT-01/03/05, BR-REC-01/03, BR-TPL-01/02/03/05, BR-CHN-08 | SRS-F01/02/04/05/06/07/09/13/14/15/17/20 | Theo UI lời mời hiện có | AT-02/03/05/06/07/08/21/24/28 |
-| ST-04 | UC-ORD-05, UC-NTF-01/03/10 | BR-INT-01/05, BR-TRG-01/02/03/05, BR-TIME-02 | SRS-F01/02/03/05/06/09 | Theo UI Order hiện có | AT-02/09/10/21/22/23 |
-| ST-05 | UC-ORD-05, UC-NTF-13 | BR-CHN-05, BR-REC-03/04, BR-SEC-03/06, BR-CFG-05 | SRS-F05/08/09/13 | UX-01/02 | AT-08/11/15/21/25/26 |
+| ST-02 | UC-USR-01, UC-NTF-02/03/09/10/11 | BR-INT-02/05, BR-TRG-02/05, BR-TIME-01/02, BR-SEC-01/05, BR-OPS-04 | SRS-F01/02/03/04/05/06/07/09/13/14/15/18/20/21 | Theo UI User hiện có | AT-01/02/03/04/19/21/22/23/28/29/38 |
+| ST-03 | UC-USR-03/04 | BR-INT-01/03/05, BR-REC-01/03, BR-TPL-01/02/03/05, BR-CHN-08 | SRS-F01/02/04/05/06/07/09/13/14/15/17/18/20 | Theo UI lời mời hiện có | AT-02/03/05/06/07/08/21/24/28/30/31/40 |
+| ST-04 | UC-ORD-05, UC-NTF-01/03/10 | BR-INT-01/05, BR-TRG-01/02/03/05, BR-TIME-02 | SRS-F01/02/03/05/06/09 | Theo UI Order hiện có | AT-02/09/10/21/22/23/35/37 |
+| ST-05 | UC-ORD-05, UC-NTF-13 | BR-CHN-05, BR-REC-03/04, BR-SEC-03/06, BR-CFG-05 | SRS-F05/08/09/13 | UX-01/02 | AT-08/11/15/21/25/26/41 |
 | ST-06 | UC-ORD-05, UC-NTF-08/09 | BR-CHN-06/09, BR-CFG-05 | SRS-F05/07/09/13/15/16/21 | UX-01/02 | AT-11/12/24/25/26/27 |
 | ST-07 | UC-ORD-05, UC-NTF-08/09 | BR-CHN-03/04/07/09, BR-REC-01, BR-COST-01/03 | SRS-F05/07/09/13/14/15/18/19/20/21 | Nội dung kênh ngoài | AT-09/11/19/24/25 |
-| ST-08 | UC-USR-09, UC-NTF-13 | BR-INT-01/06, BR-REC-03/06, BR-CHN-05, BR-SEC-03/06 | SRS-F02/05/08/09/10/13/22 | UX-01/03 | AT-03/08/13/14/15/21/26/28 |
-| ST-09 | UC-NTF-12 | BR-INT-04, BR-OPS-01/04, BR-SEC-01/02/04/05/06 | SRS-F09/11/12/13/14/15/21 | UX-04 | AT-03/16/17/18/19/25/27/28 |
+| ST-08 | UC-USR-09, UC-NTF-13 | BR-INT-01/06, BR-REC-03/06, BR-CHN-05, BR-SEC-03/06 | SRS-F02/05/08/09/10/13 | UX-01/03 | AT-03/08/13/14/15/21/26/28 |
+| ST-09 | UC-NTF-12 | BR-INT-04, BR-OPS-01/04, BR-SEC-01/02/04/05/06 | SRS-F09/11/12/13/14/15/21 | UX-04 | AT-03/16/17/18/19/25/27/28/39 |
 | ST-10 | Đã loại bỏ | — | — | — | — |
-| ST-11 | Các UC của lát cắt tương ứng | BR-INT-04/06, BR-CFG-05 | SRS-F01 đến SRS-F21; SRS-N01 đến SRS-N07 khi liên quan | UX-01 đến UX-05 khi liên quan | AT-01 đến AT-28 khi liên quan |
-| ST-12 | Các UC được chọn và UC-NTF-09/13 | BR-CHN-05/06/07/08/09, BR-OPS-04 | SRS-F01 đến SRS-F21, SRS-N01 đến SRS-N07 | UX-01 đến UX-04 | AT-01 đến AT-28; AC-17 BRD |
+| ST-11 | Các UC của lát cắt tương ứng | BR-INT-04/06, BR-CFG-05 | SRS-F01 đến SRS-F21; SRS-N01 đến SRS-N07 khi liên quan | UX-01 đến UX-05 khi liên quan | AT-01 đến AT-41 khi liên quan |
+| ST-12 | Các UC được chọn và UC-NTF-09/13 | BR-CHN-05/06/07/08/09, BR-OPS-04 | SRS-F01 đến SRS-F21, SRS-N01 đến SRS-N07 | UX-01 đến UX-04 | AT-01 đến AT-41; AC-17 BRD |
 | ST-13 | Các UC nghiệp vụ được chọn | BR-OPS-01, BR-INT-01 | SRS-F09, SRS-N07 | Không yêu cầu dashboard riêng | Chỉ số theo phạm vi; nguồn xác nhận kết quả nghiệp vụ |
+| ST-14 | UC-USR-01/02/03/04/05/06/07 | BR-INT-01/02/05, BR-REC-01, BR-SEC-01/05, BR-CHN-08 | SRS-F01/02/05/07/09/13/17/18 | Theo UI User hiện có | AT-29/30/31/32/37 |
+| ST-15 | UC-ORD-01/03/05/06/09/12/13/14/15/16, UC-NTF-01/13 | BR-INT-01/05, BR-TRG-01/02/03, BR-REC-03/04, BR-SEC-03/06 | SRS-F01/02/03/05/08/09/13 | UX-01/02 | AT-33/34/35/36/39/41 |
 
 ## 3 Các kịch bản nghiệm thu
 
@@ -78,8 +84,21 @@ AT là kịch bản của đợt đầu, bổ sung và cụ thể hóa AC trong 
 | AT-26 | Đọc cùng tin trên hai thiết bị, pagination; đổi quyền/ngữ cảnh; Push thu hồi rồi nhận bản đăng ký cũ | Trạng thái đọc backend nhất quán ở lần tải sau; danh sách/số đếm cùng scope; không dùng token cũ cho chủ/app khác; đọc không thực hiện nghiệp vụ | AC-13/16/19 |
 | AT-27 | Provider rate-limit, burst từ nguồn khác cùng OTP, dừng luồng/kênh, đổi credential; backup/restore | Giới hạn và ưu tiên theo cấu hình; accepted không mất; phần quá hạn có kết quả; phạm vi dừng/audit rõ; credential không lộ; NFR dùng giá trị đã duyệt | AC-12/17/18 |
 | AT-28 | Bí mật giả đi qua exception, trace, dead-letter, chống trùng, API hỗ trợ; đến hạn xóa và restore | Không có nguyên văn/dữ liệu dễ khôi phục bí mật ở nơi bị cấm; lưu/xóa từng loại đúng chính sách và quyền; tra cứu vẫn có metadata được phép | AC-14 |
+| AT-29 | User gửi OTP tới email cho từng `purpose`; provider Email nhận, từ chối hoặc timeout | Kết quả đồng bộ `PROVIDER_ACCEPTED`/`FAILED`/`UNKNOWN` như SMS; nội dung đúng mục đích; không retry nền | AC-01/06/17 |
+| AT-30 | Lời mời thành viên Shop và lời mời nhân viên gửi tới số điện thoại | SMS thực có đúng tổ chức và link; lời mời nhân viên dùng tổ chức nội bộ; lời mời thành viên thiếu người mời bị từ chối | AC-01/17 |
+| AT-31 | Retry lời mời/kích hoạt sau thời gian lưu link; User trả link mới, từ chối hoặc không phản hồi | Lần thử dùng link mới, không kéo dài lưu link cũ; từ chối → `SOURCE_INVALIDATED`, không retry; hết hạn gửi → `SECRET_EXPIRED`; không tính vào giới hạn cấp lại của người dùng | AC-07/14 |
+| AT-32 | Đổi mật khẩu gửi SMS và Email, một kênh lỗi; đổi định danh gửi tới liên hệ cũ | Nhóm thay thế đạt khi một kênh đạt, lỗi kênh còn lại vẫn hiển thị; tin đổi định danh chỉ có giá trị mới đã che | AC-08/09/14 |
+| AT-33 | Order phát lần lượt 10 mốc cho một đơn | Mỗi mốc được nhận một lần, Shop đúng organization thấy In-app và mở đúng Order; Push tùy chọn lỗi không làm mất In-app | AC-05/17/19 |
+| AT-34 | Mốc có selector vận hành; người có quyền ngoài data scope Shop, người mất quyền | Chỉ người có `notification.order_ops_alert.receive` và data scope bao phủ Shop nhận; người khác không nhận và không xem được | AC-14/19 |
+| AT-35 | Dispatcher Order mất phản hồi, nhận 429/5xx rồi gửi lại; gửi cùng reference với body khác; lần thất bại được giải quyết | Retry cùng `source_ref` không tạo tin thứ hai; body khác → 409 và vào dead-letter; hủy theo `cancel_group` dừng phần chờ | AC-02/07 |
+| AT-36 | Mốc mà chính sách không nhắn người nhận hàng | Liên hệ người nhận không lưu trong dữ liệu gửi, tra cứu, log hay dead-letter; mốc giao thất bại vẫn nhắn đúng chính sách | AC-14 |
+| AT-37 | Payload dùng tên trường camelCase, `shop_id`/`org_id` cũ hoặc trường lạ; đổi `X-Correlation-Id` khi replay | Từ chối 400 không echo dữ liệu; replay đổi correlation vẫn là cùng yêu cầu | AC-02/14 |
+| AT-38 | User nhận `UNKNOWN` khi gửi OTP; người dùng yêu cầu gửi lại trước và sau cooldown | Challenge vẫn hiệu lực, giao diện báo chưa xác nhận đã gửi; gửi lại chỉ được sau cooldown 3 phút; lần `UNKNOWN` không tính là gửi thất bại | AC-01 |
+| AT-39 | Liệt kê thông báo của một đơn theo `subject_ref`; người dùng Shop khác hoặc ngoài Data Scope xem qua Order | Trả đúng các yêu cầu của đơn, mới nhất trước, phân trang cursor; Order kiểm tra Data Scope trước khi trả cho frontend, người ngoài phạm vi không thấy | AC-14/19 |
+| AT-40 | Lời mời gặp lỗi tạm thời rồi retry; kết quả cuối `UNKNOWN`; xem trên frontend nội bộ | `delivery_status` hiển thị RETRYING khi có `attempt_count`/`next_attempt_at`, SENT/FAILED theo kết quả, UNCONFIRMED với `UNKNOWN` (không gộp vào SENT) | AC-07 |
+| AT-41 | Resolve audience Shop và vận hành qua API User (CF-11); thành viên mất quyền; API User không phản hồi | Shop theo quyền `notification.order_alert.receive`, vận hành theo quyền và data scope; người mất quyền không nhận; API không phản hồi đến hạn thì `RECIPIENT_UNRESOLVED`, không gửi theo dữ liệu cũ quá 5 phút | AC-14/19 |
 
-AT-10/12/18 bổ sung ca sai thứ tự và dữ liệu xung đột chưa có AC riêng trong BRD. AT-21 đến AT-28 bổ sung kiểm chứng theo SRS 1.0; QA phải tách từng tình huống thành test case, không coi một kết quả chung là đạt mọi yêu cầu con. Test về SLA/tải/lưu dữ liệu phải dùng giá trị SRS-N đã được duyệt và ghi môi trường đo.
+AT-10/12/18 bổ sung ca sai thứ tự và dữ liệu xung đột chưa có AC riêng trong BRD. AT-21 đến AT-28 bổ sung kiểm chứng theo SRS 1.0; AT-29 đến AT-41 bổ sung cho phạm vi R1 mở rộng và các hướng xử lý chốt ngày 11/10/2026 (mã AC BRD của AT-29 đến AT-41 chờ BA xác nhận); QA phải tách từng tình huống thành test case, không coi một kết quả chung là đạt mọi yêu cầu con. Test về SLA/tải/lưu dữ liệu phải dùng giá trị SRS-N đã được duyệt và ghi môi trường đo.
 
 ## 4 Điều kiện bắt đầu code
 
@@ -95,4 +114,4 @@ Các việc có thể bắt đầu ngay là hoàn thiện hợp đồng/thiết 
 
 Story có code được review, kiểm thử phù hợp, contract tests khi tích hợp, bằng chứng AT liên quan và tài liệu cập nhật. Lát cắt có kiểm chứng với nguồn thật và kênh thực; không chỉ kiểm tra adapter đơn lẻ. Bản phát hành đợt đầu có đủ năm kênh, các lát cắt được chọn, quyền/phạm vi, tra cứu, NFR được duyệt và quy trình vận hành.
 
-QA và vận hành bổ sung hướng dẫn gửi thử, theo dõi tồn đọng/chưa rõ, dừng phần chưa gửi, xử lý sự cố và khôi phục. PO duyệt kết quả nghiệp vụ; Tech Lead/vận hành xác nhận điều kiện triển khai. Thời điểm bật gửi thật/chuyển luồng cũ phải được quyết định trong kế hoạch phát hành cụ thể.
+QA và vận hành bổ sung hướng dẫn gửi thử, theo dõi tồn đọng/chưa rõ, dừng phần chưa gửi, xử lý sự cố và khôi phục. PO duyệt kết quả nghiệp vụ; Tech Lead/vận hành xác nhận điều kiện triển khai. Thời điểm bật gửi thật phải được quyết định trong kế hoạch phát hành cụ thể.

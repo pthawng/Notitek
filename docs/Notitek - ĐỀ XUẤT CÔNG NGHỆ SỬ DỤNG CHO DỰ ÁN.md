@@ -1,6 +1,6 @@
 # SuperShip - MODULE NOTIFICATION - ĐỀ XUẤT CÔNG NGHỆ SỬ DỤNG CHO DỰ ÁN
 
-**Phiên bản:** 1.1. **Ngày:** 08/10/2026. **Trạng thái:** PO đã chốt ngôn ngữ (3.1), messaging (3.2), lưu trữ (3.3, 3.4), provider adapter (3.5) và In-app realtime (3.6). Broker sự kiện liên module chờ SuperPlatform; triển khai production và điều kiện đội ngũ Go được theo dõi tại mục Rủi ro.
+**Phiên bản:** 1.2. **Ngày:** 11/10/2026. Bản 1.2: theo quyết định A2, R1 không triển khai broker sự kiện liên module; nguồn gọi REST từ dispatcher outbox của nguồn. **Trạng thái:** PO đã chốt ngôn ngữ (3.1), messaging (3.2), lưu trữ (3.3, 3.4), provider adapter (3.5) và In-app realtime (3.6). Broker sự kiện liên module để phân kỳ sau, theo lựa chọn của SuperPlatform; triển khai production và điều kiện đội ngũ Go được theo dõi tại mục Rủi ro.
 
 ## Mục tiêu và nguyên tắc chọn stack
 
@@ -54,7 +54,7 @@ User và Order đang dùng Java/Spring Boot, nên Notitek phải tự hiện th�
 
 ### 3.2. Hàng đợi và tích hợp bất đồng bộ với SuperPlatform
 
-**Quyết định đã chốt với PO:** chọn **RabbitMQ cho hàng đợi công việc gửi của Notitek**. Broker sự kiện giữa các module tuân theo kiến trúc chung của SuperPlatform; **tích hợp Kafka nếu nền tảng chọn Kafka**. Không bổ sung một cụm Kafka riêng cho Notitek trong R1 chỉ để nhận sự kiện từ module khác.
+**Quyết định đã chốt với PO:** chọn **RabbitMQ cho hàng đợi công việc gửi nội bộ của Notitek**. **R1 không dùng broker sự kiện liên module** (quyết định A2, 11/10/2026): module nguồn ghi outbox của mình và dispatcher của nguồn gọi REST `/v1/notifications`. Ở phân kỳ sau, broker giữa các module tuân theo kiến trúc chung của SuperPlatform; **tích hợp Kafka nếu nền tảng chọn Kafka**. Không bổ sung một cụm Kafka riêng cho Notitek chỉ để nhận sự kiện từ module khác.
 
 Quyết định này chốt phần messaging; các lựa chọn công nghệ khác được xem xét riêng.
 
@@ -75,20 +75,20 @@ Kafka và RabbitMQ có thể cùng xuất hiện trong một luồng với hai v
 
 #### Các luồng sử dụng
 
-1. **Sự kiện nghiệp vụ:** module nguồn lưu nghiệp vụ và outbox trong cùng transaction, hoặc dùng cơ chế tương đương bảo đảm phát sự kiện sau commit. Sự kiện đi qua broker SuperPlatform đến Notification. Notification lưu yêu cầu cùng outbox công việc vào PostgreSQL, sau đó chuyển công việc sang RabbitMQ để worker xử lý.
+1. **Sự kiện nghiệp vụ:** module nguồn lưu nghiệp vụ và outbox trong cùng transaction, hoặc dùng cơ chế tương đương bảo đảm phát sau commit. **R1:** dispatcher outbox của nguồn gọi REST `/v1/notifications` (OAuth2 client credentials), chỉ đánh dấu đã gửi khi nhận 2xx. **Phân kỳ sau:** sự kiện đi qua broker SuperPlatform đến Notification. Notification lưu yêu cầu cùng outbox công việc vào PostgreSQL, sau đó chuyển công việc sang RabbitMQ để worker xử lý.
 2. **API gửi bất đồng bộ:** Notification lưu bền vững yêu cầu cùng outbox trước khi trả accepted, rồi chuyển công việc sang RabbitMQ. Luồng này không bắt buộc đi qua Kafka.
-3. **OTP đồng bộ:** User gọi API và nhận `PROVIDER_ACCEPTED`, `FAILED` hoặc `UNKNOWN` trong cửa sổ tối đa 5 giây. Tuân thủ `sendDeadline` và `expiresAt`; không retry nền. Chỉ thử provider thay thế khi chắc chắn lần trước chưa gửi, còn trong cửa sổ đồng bộ và hợp đồng OTP cho phép. User sở hữu việc phát hành, kích hoạt và kiểm tra mã.
+3. **OTP đồng bộ:** User gọi API và nhận `PROVIDER_ACCEPTED`, `FAILED` hoặc `UNKNOWN` trong cửa sổ tối đa 5 giây. Tuân thủ `send_deadline` và `expires_at`; không retry nền. Chỉ thử provider thay thế khi chắc chắn lần trước chưa gửi, còn trong cửa sổ đồng bộ và hợp đồng OTP cho phép. User sở hữu việc phát hành, kích hoạt và kiểm tra mã.
 
 #### Trách nhiệm và bảo đảm giao nhận
 
-- **SuperPlatform:** thống nhất broker sự kiện, hợp đồng và phiên bản sự kiện, quyền truy cập, retention/replay, truy vết và đầu mối vận hành hạ tầng dùng chung.
+- **SuperPlatform (phân kỳ broker):** thống nhất broker sự kiện, hợp đồng và phiên bản sự kiện, quyền truy cập, retention/replay, truy vết và đầu mối vận hành hạ tầng dùng chung.
 - **Module nguồn:** phát sự kiện phản ánh nghiệp vụ đã commit, cung cấp định danh ổn định để chống trùng. Module nguồn không cần biết cấu trúc queue hoặc provider của Notification.
-- **Notification:** chỉ xác nhận nhận sự kiện sau khi đã lưu bền vững thông tin cần để tiếp tục xử lý. Với Kafka, commit offset theo tiến độ đã lưu bền vững của từng partition, không bỏ qua sự kiện chưa được lưu. PostgreSQL và broker không tự có transaction chung; cần outbox và cơ chế chuyển tiếp có thể phục hồi.
+- **Notification:** chỉ trả accepted (REST) hoặc xác nhận nhận sự kiện (khi có broker) sau khi đã lưu bền vững thông tin cần để tiếp tục xử lý. Với Kafka, commit offset theo tiến độ đã lưu bền vững của từng partition, không bỏ qua sự kiện chưa được lưu. PostgreSQL và broker không tự có transaction chung; cần outbox và cơ chế chuyển tiếp có thể phục hồi.
 - **Chuyển tiếp và worker:** dùng publisher confirms, xử lý trường hợp không định tuyến được, xác định thời điểm consumer acknowledgement và chống xử lý trùng. Message có thể được giao lại; broker hoặc ACID của database không tự bảo đảm chỉ gửi đến provider đúng một lần.
 - **Replay và retry:** kiểm tra chống trùng, hạn gửi, trạng thái hủy và kết quả hiện có trước khi tạo hoặc thực hiện công việc. Đọc lại sự kiện không mặc nhiên gửi lại thông báo. Provider timeout phải được xử lý theo trạng thái chưa rõ kết quả, không tự xem là chắc chắn chưa gửi.
 - **Vận hành:** đầu mối nền tảng phụ trách hạ tầng sự kiện; nhóm Notification sở hữu cấu hình queue, worker và chính sách xử lý công việc. Tech Lead phối hợp vận hành xác định topology, phiên bản và HA của RabbitMQ theo yêu cầu RPO/RTO/SLO ngay từ R1; không đợi đạt ngưỡng số thông báo/ngày mới xem xét khả năng chịu lỗi.
 
-**Phần còn phụ thuộc nền tảng:** xác nhận broker sự kiện mà SuperPlatform lựa chọn và hợp đồng kết nối tương ứng. Quyết định này không đồng nghĩa đã chọn Kafka cho toàn SuperPlatform.
+**Phần còn phụ thuộc nền tảng:** R1 cần OAuth2 client credentials cho service (CF-09). Broker sự kiện mà SuperPlatform lựa chọn và hợp đồng kết nối tương ứng chỉ cần khi bắt đầu phân kỳ broker. Quyết định này không đồng nghĩa đã chọn Kafka cho toàn SuperPlatform.
 
 Tham khảo: [Kafka — Introduction](https://kafka.apache.org/intro/), [RabbitMQ — Queues](https://www.rabbitmq.com/docs/queues), [RabbitMQ — Reliability](https://www.rabbitmq.com/docs/reliability), [RabbitMQ — Streams](https://www.rabbitmq.com/docs/streams).
 
@@ -173,7 +173,7 @@ Techstack không nên chọn theo một xu hướng chung mà theo **thực tế
 |---|---|
 |**Ngôn ngữ / Backend**|Go — đã chốt|
 |**Hàng đợi công việc gửi của Notitek**|RabbitMQ — đã chốt|
-|**Broker sự kiện liên module**|Theo chuẩn SuperPlatform; tích hợp Kafka nếu nền tảng chọn Kafka; không dựng Kafka riêng cho Notitek trong R1|
+|**Broker sự kiện liên module**|Không dùng trong R1 (REST từ dispatcher outbox nguồn); phân kỳ sau theo chuẩn SuperPlatform, tích hợp Kafka nếu nền tảng chọn Kafka; không dựng Kafka riêng cho Notitek|
 |**OTP đồng bộ**|API theo hợp đồng User; tối đa 5 giây, không retry nền|
 |**Database giao dịch**|PostgreSQL|
 |**Database lịch sử/audit**|PostgreSQL (partition theo tháng) → Cassandra/DynamoDB khi ≥ 10 triệu/ngày|
@@ -192,6 +192,6 @@ Techstack không nên chọn theo một xu hướng chung mà theo **thực tế
 | TR-03 | Lệch chuẩn với các service Java | Danh sách thành phần dùng chung ở mục 3.1 có ước lượng công và contract test với User/Order. ADR-01 đã chốt tự xây (09/10/2026) | Tech Lead | Trước M0 |
 | TR-04 | Gateway/proxy cắt kết nối SSE | DevOps xác nhận tắt buffering và idle timeout > 25 giây cho endpoint SSE; polling dự phòng hoạt động | DevOps, Shop FE | Trước M2 |
 | TR-05 | Thêm hai hạ tầng mới (RabbitMQ, Redis) chưa có trên nền tảng | Vận hành nhận sở hữu, có HA, giám sát và runbook từ R1 | Vận hành, Tech Lead | Trước khi bật gửi thật |
-| TR-06 | Broker sự kiện SuperPlatform chưa được chọn | Chốt broker và hợp đồng kết nối trước M2; M1 dùng REST nên không bị chặn | Đầu mối nền tảng | Trước M2 |
+| TR-06 | Broker sự kiện SuperPlatform chưa được chọn | Không chặn R1: theo A2, M1 và M2 dùng REST từ dispatcher outbox nguồn; chốt broker khi lập kế hoạch phân kỳ sau | Đầu mối nền tảng | Phân kỳ sau |
 | TR-07 | Chưa có thiết kế triển khai production | Số instance, môi trường, secret management và RPO/RTO theo SRS-P08 | Tech Lead, DevOps | Trước M1 nghiệm thu |
 

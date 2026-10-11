@@ -1,0 +1,25 @@
+{
+  "source_ref": "user.employee_offboarded-001",
+  "type": "user.employee_offboarded",
+  "type_version": 1,
+  "mode": "async",
+  "occurred_at": "2026-10-11T10:00:00+07:00",
+  "context": {
+    "context_type": "WORKSPACE",
+    "application_id": "app-internal-web",
+    "organization_id": "org-corp-demo"
+  },
+  "recipients": [
+    {
+      "kind": "CONTACT",
+      "recipient_ref": "former-employee",
+      "email": "staff@example.invalid"
+    }
+  ],
+  "data": {
+    "offboarding_id": "offboarding-demo",
+    "organization_name": "Org Demo",
+    "effective_at": "2026-10-11T17:00:00+07:00"
+  },
+  "send_deadline": "2026-10-12T10:00:00+07:00"
+}

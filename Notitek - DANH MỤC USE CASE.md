@@ -2,6 +2,8 @@
 
 **Trạng thái:** Danh mục nghiệp vụ có các lát cắt đợt đầu đã xác nhận; chính sách chi tiết, SRS và hợp đồng tích hợp có trạng thái riêng.  
 **Ngày đồng bộ BRD 0.5:** 08/10/2026.  
+**Cập nhật 11/10/2026:** PO mở rộng phạm vi R1 (DEC bản 1.4, mục 2.13): thêm 4 thông báo tài khoản User và đủ 10 mốc thông báo của Order; người nhận vận hành/CSKH; User cấp lại link khi cần gửi lại.  
+**Cập nhật lần 2, 11/10/2026 (DEC 1.6):** thêm UC-ORD-12 đến UC-ORD-16 cho 5 mốc Order chưa có mã; tên event đề xuất cũ thay bằng `type` của Notification; UC-USR-07, UC-ORD-09 lên P0 (R1); UC-ORD-04 xuống P1 (không thuộc 10 mốc R1); lời mời đi qua outbox của User.  
 **Tài liệu nền:** [BRD Notification hiện tại](<Notitek - ĐẶC TẢ YÊU CẦU NGHIỆP VỤ (BRD).md>).  
 **Phạm vi đối chiếu:** Mã nguồn hiện có của [User](../user-spf/) và [Order](../order-spf/).
 
@@ -20,8 +22,10 @@ Tên thành phần dùng theo BRD: Luồng thông báo, Đối tượng nhận t
 | Lát cắt đã chọn | UC | Phạm vi |
 |---|---|---|
 | OTP | UC-USR-01 | Hợp đồng gửi có phản hồi; User sở hữu mã và xác thực. |
-| Lời mời | UC-USR-03, UC-USR-04 | Email sau commit, link và hành động ở User. |
+| Lời mời | UC-USR-03, UC-USR-04 | Email hoặc SMS qua outbox của User, link và hành động ở User; User cấp lại link khi Notification cần gửi lại sau hạn giữ link. |
+| Thông báo tài khoản (bổ sung 11/10/2026) | UC-USR-02, UC-USR-05, UC-USR-06, UC-USR-07 | Kích hoạt tài khoản, mật khẩu đã thay đổi/đặt lại, định danh đăng nhập đã thay đổi (gửi liên hệ cũ), chấm dứt tư cách nhân viên. |
 | Giao thất bại | UC-ORD-05 | In-app/Push cho Shop, ZNS/SMS theo chính sách cho liên hệ giao dịch. |
+| 10 mốc Order (bổ sung 11/10/2026) | UC-ORD-01, UC-ORD-03, UC-ORD-05, UC-ORD-06, UC-ORD-09, UC-ORD-12 đến UC-ORD-16 | Đơn tạo thành công, đã hủy, lấy hàng thất bại, đã lấy hàng, giao thất bại, đã giao, giao một phần, xác nhận chuyển hoàn, đã hoàn hàng, quá hạn SLA. Shop nhận In-app/Push; vận hành/CSKH nhận khi Order chỉ định; R1 chỉ nhắn người nhận hàng ở mốc giao thất bại. Order cung cấp liên hệ người nhận cùng sự việc; Notification không tra ngược sang Order. |
 | Cảnh báo/yêu cầu thiết bị | UC-USR-09 | Tiếp nối chuông hiện có; hành động bảo mật ở User. |
 | Hộp tin và tra cứu | UC-NTF-13, UC-NTF-12 | Đúng ngữ cảnh tài khoản/công việc và tra kết quả theo quyền. |
 
@@ -103,27 +107,32 @@ Các luồng đang gửi qua `NotificationPort` và template trong User: OTP, k�
 | UC-USR-04 | Mời thành viên vào Shop | Gửi link cho người được mời với tên Shop và người mời; tuân thủ trạng thái lời mời | Gửi sau commit qua `NotificationPort` | P0 |
 | UC-USR-05 | Mật khẩu đã thay đổi/đặt lại | Cảnh báo chủ tài khoản qua liên hệ bảo mật; không chứa mật khẩu hoặc mã xác thực | Qua NotificationPort sau commit | P0 |
 | UC-USR-06 | Số điện thoại/email đăng nhập đã thay đổi | Cảnh báo tới liên hệ **cũ**, chỉ hiển thị giá trị mới đã che bớt | Qua NotificationPort sau commit | P0 |
-| UC-USR-07 | Chấm dứt tư cách nhân viên | Báo người bị ảnh hưởng và đầu mối có trách nhiệm theo chính sách; không gửi nếu quyết định chưa có hiệu lực | Gửi trực tiếp | P1 |
+| UC-USR-07 | Chấm dứt tư cách nhân viên | Báo người bị ảnh hưởng và đầu mối có trách nhiệm theo chính sách; không gửi nếu quyết định chưa có hiệu lực | Gửi trực tiếp | P0 (R1) |
 | UC-USR-08 | Yêu cầu phê duyệt và kết quả thay đổi tư cách/quyền | Nhắc đúng người duyệt; báo kết quả cho người yêu cầu; dừng nhắc khi đã xử lý | Có nghiệp vụ phê duyệt, cần chốt event và người nhận | P1 |
 | UC-USR-09 | Cảnh báo và yêu cầu về thiết bị | Chủ tài khoản xem tin, mở và thực hiện hành động tại User; đọc tách kết quả bảo mật; không gắn mặc định vào Shop | Chuông Shop có giao diện device trust gọi User; cần hợp đồng event vào hộp tin chung | P0 |
 
 ## 4. Luồng tích hợp từ Module Order
 
-Order hiện ghi các event `order.created.v1`, `order.cancelled.v1`, `order.updated.v1`, `order.return.requested.v1`, `order.return.confirmed.v1` vào outbox. [OutboxWriter](../order-spf/src/main/java/vn/supership/superplatform/order/platform/outbox/OutboxWriter.java) ghi rõ dispatcher phát đi broker/HTTP **chưa được xây dựng**. Các mốc lấy/giao hàng có trạng thái nghiệp vụ nhưng cần event nguồn đủ rõ trước khi Notification sử dụng. Xem [trạng thái Order](../order-spf/src/main/java/vn/supership/superplatform/order/feature/order/internal/domain/model/OrderActionPolicy.java).
+Order hiện ghi các event `order.created.v1`, `order.cancelled.v1`, `order.updated.v1`, `order.return.requested.v1`, `order.return.confirmed.v1` vào outbox. [OutboxWriter](../order-spf/src/main/java/vn/supership/superplatform/order/platform/outbox/OutboxWriter.java) ghi rõ dispatcher phát đi broker/HTTP **chưa được xây dựng**. Các mốc lấy/giao hàng có trạng thái nghiệp vụ nhưng cần event nguồn đủ rõ trước khi Notification sử dụng. Theo quyết định 11/10/2026, R1 dùng đúng 10 mốc trong hợp đồng Order; Order ghi outbox cho từng mốc và dispatcher của Order gửi sang Notification qua API, chưa dùng broker. Xem [trạng thái Order](../order-spf/src/main/java/vn/supership/superplatform/order/feature/order/internal/domain/model/OrderActionPolicy.java).
 
 | Mã | Luồng / sự việc nguồn | Trường hợp gửi và điều kiện dừng chính | Hiện trạng nguồn | Ưu tiên |
 |---|---|---|---|---|
-| UC-ORD-01 | Đơn được tạo thành công | Xác nhận cho Shop/người tạo; không mặc định gửi cho người nhận hàng khi đơn chỉ vừa được tạo | `order.created.v1` đã có outbox | P0 |
+| UC-ORD-01 | Đơn được tạo thành công | Xác nhận cho Shop/người tạo; không mặc định gửi cho người nhận hàng khi đơn chỉ vừa được tạo | `order.created.v1` đã có outbox; Notification type `order.created` | P0 |
 | UC-ORD-02 | Tạo vận đơn NVC thất bại, cần xử lý | Cảnh báo Shop/nhân sự chịu trách nhiệm với hướng xử lý; chỉ gửi sau kết quả thất bại đã chốt | Có nghiệp vụ/trạng thái; cần event riêng | P0 |
-| UC-ORD-03 | Đơn bị hủy thành công | Báo Shop và người bị ảnh hưởng theo chính sách; dừng lịch nhắc lấy/giao đang chờ | `order.cancelled.v1` đã có outbox | P0 |
-| UC-ORD-04 | Bắt đầu giao hàng | Người nhận hàng nhận thông tin cần thiết; Shop có thể nhận In-app/Push; phải gắn đúng chặng/NVC | Có trạng thái; event `delivery.started` là đề xuất | P0 |
-| UC-ORD-05 | Giao hàng thất bại | Người nhận biết kết quả/hướng xử lý; Shop biết đơn cần can thiệp; tránh lặp theo webhook trùng | Có trạng thái; event `delivery.failed` là đề xuất | P0 |
-| UC-ORD-06 | Giao hàng thành công | Xác nhận hoàn tất cho các bên được chọn; hủy thông báo nhắc giao chưa gửi | Có trạng thái; event `delivery.completed` là đề xuất | P0 |
+| UC-ORD-03 | Đơn bị hủy thành công | Báo Shop và người bị ảnh hưởng theo chính sách; dừng lịch nhắc lấy/giao đang chờ | `order.cancelled.v1` đã có outbox; Notification type `order.cancelled` | P0 |
+| UC-ORD-04 | Bắt đầu giao hàng | Người nhận hàng nhận thông tin cần thiết; Shop có thể nhận In-app/Push; phải gắn đúng chặng/NVC | Có trạng thái; không thuộc 10 mốc R1 (hợp đồng Order loại trạng thái đang giao khỏi danh sách mốc) | P1 |
+| UC-ORD-05 | Giao hàng thất bại | Người nhận biết kết quả/hướng xử lý; Shop biết đơn cần can thiệp; tránh lặp theo webhook trùng | Có trạng thái; Notification type `order.delivery_failed` | P0 |
+| UC-ORD-06 | Giao hàng thành công | Xác nhận hoàn tất cho các bên được chọn; hủy thông báo nhắc giao chưa gửi | Có trạng thái; Notification type `order.delivered` | P0 |
 | UC-ORD-07 | Thay đổi thông tin quan trọng của đơn | Chỉ báo khi trường thay đổi ảnh hưởng người nhận, tiền thu hoặc việc giao; không gửi cho mọi chỉnh sửa nội bộ | `order.updated.v1` đã có outbox; cần quy tắc chọn trường | P1 |
 | UC-ORD-08 | Yêu cầu chuyển hoàn | Báo Shop/người xử lý về yêu cầu và bước tiếp theo; không coi là hoàn tất chuyển hoàn | `order.return.requested.v1` đã có outbox | P1 |
-| UC-ORD-09 | Xác nhận chuyển hoàn | Báo kết quả đã được module nguồn xác nhận | `order.return.confirmed.v1` đã có outbox | P1 |
+| UC-ORD-09 | Xác nhận chuyển hoàn | Báo kết quả đã được module nguồn xác nhận | `order.return.confirmed.v1` đã có outbox; Notification type `order.return_confirmed` | P0 (R1) |
 | UC-ORD-10 | Đổi NVC hoặc bàn giao chặng thất bại | Báo Shop/nhân sự vận hành khi cần hành động; tránh nhân thông báo theo số vận đơn kỹ thuật | Có nghiệp vụ đa chặng; cần event riêng | P1 |
 | UC-ORD-11 | COD/đối soát/thanh toán hoàn tất | Gửi đúng chủ Shop/kế toán và số tiền đã chốt; nguồn phải là module sở hữu khoản tiền | Chưa đưa vào tích hợp Order hiện tại; cần module sở hữu tài chính | P2 |
+| UC-ORD-12 | Lấy hàng thất bại | Báo Shop để theo dõi hoặc yêu cầu lấy lại; vận hành nhận khi Order chỉ định; hủy phần chờ khi lần thất bại được giải quyết | Có trạng thái SPF-0402; Notification type `order.pickup_failed` | P0 (R1) |
+| UC-ORD-13 | Đã lấy hàng | Báo Shop hành trình đã bắt đầu | Có trạng thái SPF-0501; Notification type `order.picked_up` | P0 (R1) |
+| UC-ORD-14 | Giao một phần | Báo kết quả giao một phần và phần hàng còn lại xử lý theo luồng tiếp theo | Có trạng thái SPF-0902; Notification type `order.partially_delivered` | P0 (R1) |
+| UC-ORD-15 | Đã hoàn hàng | Báo kết quả hoàn/trả cuối cùng về điểm nhận hoàn | Có trạng thái SPF-1201/1202/1203; Notification type `order.returned` | P0 (R1) |
+| UC-ORD-16 | Vi phạm SLA | Cảnh báo Shop và/hoặc vận hành khi vượt hạn SLA đã áp dụng, mỗi lần vi phạm một lần | Chưa có bộ phát hiện SLA (CF-04); Notification type `order.sla_breached` | P0 (R1) |
 
 ### Ví dụ phân rã một luồng
 
@@ -131,12 +140,12 @@ Với **UC-ORD-05 - Giao hàng thất bại**, module nguồn phát một event 
 
 ## 5. Hợp đồng và quyết định cần chốt trước SRS
 
-1. **Event đầu vào:** thống nhất `eventId`, `eventType`, `schemaVersion`, `occurredAt`, aggregate ID/version, tổ chức/Shop, app/brand, correlation ID, người nhận hoặc căn cứ xác định người nhận, dữ liệu nghiệp vụ tối thiểu và thời điểm hết giá trị.
+1. **Event đầu vào** (R1 đã cụ thể hóa thành API gửi chung, xem hợp đồng API v1): thống nhất `source_ref`, `type`, `type_version`, `occurred_at`, `subject_ref`, tổ chức (`organization_id`), ứng dụng (`application_id`)/brand, correlation ID, người nhận hoặc căn cứ xác định người nhận, dữ liệu nghiệp vụ tối thiểu và thời điểm hết giá trị.
 2. **Event hay yêu cầu gửi:** OTP và các mã/link nhạy cảm cần hợp đồng an toàn có kết quả phản hồi; không đưa bí mật vào event bus phổ thông hoặc log. Event sau commit phù hợp với các thông báo về sự việc đã hoàn tất.
 3. **Quyền sở hữu người nhận:** nguồn cung cấp người nhận phát sinh theo giao dịch; User cung cấp bản đọc định danh/tư cách tối thiểu đã phê duyệt. Khi thiếu hoặc hết hiệu lực, không tự đoán người nhận.
 4. **Ý nghĩa kết quả:** `accepted`, nhà cung cấp nhận, `delivered`, `failed`, `read` và hành động nghiệp vụ đã hoàn tất là các trạng thái khác nhau; module nguồn chỉ dựa vào trạng thái đã định nghĩa rõ.
 5. **Đơn hàng đa chặng:** chọn rõ sự kiện theo Order hay theo vận đơn/chặng; không gửi cho con người trên từng bản ghi tracking kỹ thuật.
-6. **Phạm vi giai đoạn đầu:** BRD 0.5 đã chốt 5 kênh và các lát cắt OTP, lời mời, giao thất bại, cảnh báo thiết bị; client Push/app mở rộng và các năng lực ngoài đợt đầu còn cần chốt.
+6. **Phạm vi giai đoạn đầu:** BRD 0.5 đã chốt 5 kênh và các lát cắt OTP, lời mời, giao thất bại, cảnh báo thiết bị; ngày 11/10/2026 bổ sung 4 thông báo tài khoản User và đủ 10 mốc Order; client Push/app mở rộng và các năng lực ngoài đợt đầu còn cần chốt.
 7. **Quyền và chi phí:** xác định ai có thể cấu hình mẫu/luồng theo tổ chức, ai duyệt, ai trả phí SMS/ZNS/Email và khi hết hạn mức phải xử lý ra sao.
 
 ## 6. Mẫu phân rã cho từng use case ở bước tiếp theo

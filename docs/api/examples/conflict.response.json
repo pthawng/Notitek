@@ -1,0 +1,9 @@
+{
+  "error": true,
+  "message": "Reference already used with different input",
+  "data": {
+    "code": "IDEMPOTENCY_CONFLICT",
+    "trace_id": "trace-demo",
+    "details": []
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "source_ref": "user.invitation-002",
+  "type": "user.invitation",
+  "type_version": 1,
+  "mode": "async",
+  "occurred_at": "2026-10-11T10:00:00+07:00",
+  "context": {
+    "context_type": "WORKSPACE",
+    "application_id": "app-internal-web",
+    "organization_id": "org-corp-demo"
+  },
+  "recipients": [
+    {
+      "kind": "CONTACT",
+      "recipient_ref": "invitee-demo-2",
+      "phone": "+84900000001"
+    }
+  ],
+  "data": {
+    "invitation_id": "invitation-demo-2",
+    "invitation_kind": "EMPLOYEE",
+    "workspace_name": "Org Demo"
+  },
+  "send_deadline": "2026-10-12T10:00:00+07:00",
+  "expires_at": "2026-10-13T10:00:00+07:00",
+  "secrets": {
+    "invitation_url": "https://internal.example.invalid/invitations/accept?token=demo-only"
+  },
+  "cancel_group": "invitation-demo-2"
+}

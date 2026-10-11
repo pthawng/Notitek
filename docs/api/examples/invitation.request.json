@@ -1,0 +1,31 @@
+{
+  "source_ref": "user.invitation-001",
+  "type": "user.invitation",
+  "type_version": 1,
+  "mode": "async",
+  "occurred_at": "2026-10-11T10:00:00+07:00",
+  "context": {
+    "context_type": "WORKSPACE",
+    "application_id": "app-shop-web",
+    "organization_id": "org-shop-demo"
+  },
+  "recipients": [
+    {
+      "kind": "CONTACT",
+      "recipient_ref": "invitee-demo",
+      "email": "invitee@example.invalid"
+    }
+  ],
+  "data": {
+    "invitation_id": "invitation-demo",
+    "invitation_kind": "SHOP_MEMBER",
+    "workspace_name": "Shop Demo",
+    "inviter_name": "Demo"
+  },
+  "send_deadline": "2026-10-12T10:00:00+07:00",
+  "expires_at": "2026-10-13T10:00:00+07:00",
+  "secrets": {
+    "invitation_url": "https://shop.example.invalid/invitations/accept?token=demo-only"
+  },
+  "cancel_group": "invitation-demo"
+}

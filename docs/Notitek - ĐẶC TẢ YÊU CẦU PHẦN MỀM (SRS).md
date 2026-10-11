@@ -1,7 +1,7 @@
 # Notitek - ĐẶC TẢ YÊU CẦU PHẦN MỀM (SRS)
 
-**Phiên bản:** 1.1 — baseline nghiệp vụ sau PO review, kèm giá trị tham số PO đã chốt.
-**Ngày:** 08/10/2026.
+**Phiên bản:** 1.4 — baseline nghiệp vụ sau PO review, kèm giá trị tham số PO đã chốt; loại bỏ phạm vi chuyển đổi hệ thống cũ; mở rộng phạm vi R1 theo DEC bản 1.6.
+**Ngày:** 11/10/2026.
 **Chủ trì:** PO/BA Notification; phối hợp User, Order, User/Authorization, chủ ứng dụng, vận hành và QA.
 **Trạng thái:** Đã PO review và chốt nội dung yêu cầu nghiệp vụ trong vai trò PO được giao. Giá trị định lượng và đầu ra tích hợp cần bên sở hữu xác nhận được quản lý riêng tại mục 11; chưa ghi nhận nghiệm thu phần mềm.
 
@@ -31,6 +31,8 @@ SRS này đặc tả hành vi phần mềm quan sát và kiểm chứng được
 | 1.0 | Hoàn thành vòng PO review ngày 08/10/2026; sửa cửa sổ đồng bộ/bảo vệ dữ liệu chống trùng, đồng bộ UC–UX–hợp đồng–thiết kế–backlog và chốt baseline nghiệp vụ. |
 | 1.1 | Ngày 08/10/2026, PO chốt DEC-01 đến DEC-12 và giá trị khởi điểm SRS-P01 đến SRS-P12; mục 11 dẫn chiếu tài liệu Quyết định PO cho các DEC. Không đổi yêu cầu chức năng. |
 | 1.2 | Ngày 09/10/2026, PO xác nhận không có hệ thống cũ: loại SRS-F22 và DEC-11, bỏ phần chuyển feed/ZNS cũ ở SRS-F10, SRS-F19, mục 7.4 và PO07. |
+| 1.3 | Ngày 11/10/2026, áp dụng A1–A8/B1 (DEC 1.4 mục 2.13): R1 thêm OTP qua Email, lời mời qua SMS và lời mời nhân viên, bốn thông báo tài khoản User, đủ 10 mốc Order và audience vận hành; Order gửi liên hệ người nhận; nguồn gọi REST từ dispatcher outbox, broker để sau; User cấp lại link. Cập nhật mục 2.1, 2.2, 7, 11.2, 12.1, SRS-F17.02 và SRS-PO02. |
+| 1.4 | Ngày 11/10/2026, đồng bộ DEC 1.6: truy vết ST-14 tới UC-USR-01 đến 07, ST-15 tới UC-ORD-01/03/05/06/09/12–16; thêm AT-38 đến AT-41 vào mục 12.1; mục 11.2 dẫn chiếu DEC mục 2.14–2.15. |
 
 ### 1.3. Các từ dùng trong tích hợp
 
@@ -53,9 +55,10 @@ SRS này đặc tả hành vi phần mềm quan sát và kiểm chứng được
 
 | Bên có yêu cầu | Yêu cầu đối với Notification | Kết quả bên đó cần |
 |---|---|---|
-| User — xác thực | “Tôi đã phát hành một mã và chọn liên hệ. Hãy gửi qua SMS thật, trong hạn gửi tôi cấp, và trả đúng mức kết quả để tôi quyết định tiếp tục.” | Phân biệt đã tiếp nhận, nhà cung cấp nhận, lỗi và chưa rõ; không tự kích hoạt hoặc xác minh mã. |
-| User — lời mời | “Lời mời đã được lưu. Hãy gửi email đúng tổ chức/Shop và link tôi cấp; nếu gửi lỗi, lời mời vẫn tồn tại.” | Truy vết được email; không tạo membership hoặc đảo ngược lời mời đã commit. |
-| Order | “Tôi xác nhận một lần giao thất bại. Hãy báo đúng Shop và liên hệ của đơn, với nội dung và kênh khác nhau; dừng phần chờ khi tôi yêu cầu.” | Kết quả riêng theo trường hợp gửi; phân biệt lần phát lại với sự việc giao thất bại mới. |
+| User — xác thực | “Tôi đã phát hành một mã và chọn liên hệ. Hãy gửi qua SMS hoặc Email thật theo đích tôi chọn, trong hạn gửi tôi cấp, và trả đúng mức kết quả để tôi quyết định tiếp tục.” | Phân biệt đã tiếp nhận, nhà cung cấp nhận, lỗi và chưa rõ; không tự kích hoạt hoặc xác minh mã. |
+| User — lời mời | “Lời mời thành viên Shop hoặc nhân viên tổ chức đã được lưu. Hãy gửi Email hoặc SMS đúng tổ chức và link tôi cấp; nếu link hết hạn lưu khi cần thử lại, hãy xin tôi link mới; nếu gửi lỗi, lời mời vẫn tồn tại.” | Truy vết được kết quả gửi; không tạo membership hoặc đảo ngược lời mời đã commit. |
+| User — thông báo tài khoản | “Tài khoản đã được tạo cần kích hoạt, mật khẩu vừa đổi, định danh vừa thay hoặc nhân viên vừa nghỉ việc. Hãy báo đúng liên hệ tôi chỉ định.” | Kích hoạt, cảnh báo bảo mật và thông báo nghỉ việc đến đúng người; không lộ giá trị mới đầy đủ hay token. |
+| Order | “Tôi xác nhận một trong 10 mốc của đơn (tạo, hủy, lấy thất bại, đã lấy, giao thất bại, đã giao, giao một phần, xác nhận hoàn, đã hoàn, vi phạm SLA) và gửi kèm liên hệ người nhận. Hãy báo đúng Shop, vận hành khi tôi chỉ định và người nhận theo chính sách; dừng phần chờ khi tôi yêu cầu.” | Kết quả riêng theo trường hợp gửi; phân biệt lần phát lại với sự việc mới; Notification không gọi ngược Order. |
 | Người dùng Shop | “Tôi muốn xem tin của tài khoản và công việc được phép, biết tin nào chưa đọc và mở đúng đơn.” | Không lẫn Shop, app hoặc tài khoản; đọc tin không hoàn tất công việc. |
 | Chủ tài khoản | “Tôi cần tiếp tục thấy cảnh báo thiết bị và xử lý tại User, kể cả khi chuyển Shop.” | Không mất hành động bảo mật đang có; trạng thái nguồn tách với trạng thái đọc. |
 | Vận hành | “Tôi cần tìm từ reference nguồn, biết đã gửi cho ai, bằng cấu hình nào và có thể dừng phần nào.” | Lịch sử có bằng chứng và lý do, che dữ liệu theo quyền; không cần xem OTP/token. |
@@ -64,10 +67,10 @@ SRS này đặc tả hành vi phần mềm quan sát và kiểm chứng được
 ### 2.2. Nội dung thuộc đợt đầu
 
 - Tiếp nhận lệnh gửi và sự việc từ nguồn được phép; chống trùng; chọn luồng, mẫu và người nhận theo hợp đồng.
-- SMS cho OTP; Email cho lời mời; In-app/Push cho Shop; Zalo ZNS và SMS dự phòng theo chính sách cho liên hệ của đơn.
+- SMS hoặc Email cho OTP; Email hoặc SMS cho lời mời (thành viên Shop, nhân viên tổ chức) và thông báo tài khoản (kích hoạt, đổi mật khẩu, đổi định danh, nghỉ việc); In-app/Push cho Shop và In-app cho vận hành ở 10 mốc Order; Zalo ZNS và SMS dự phòng theo chính sách cho liên hệ của đơn (R1: mốc giao thất bại).
 - Hộp tin tiếp nối cảnh báo thiết bị User, tách ngữ cảnh tài khoản/công việc.
 - Cấu hình tối thiểu, kết nối năm kênh, kết quả, tra cứu, quyền, bảo vệ dữ liệu, điều kiện chi phí.
-- Đường tích hợp và việc phối hợp User, Order, frontend, chủ đích Push, vận hành là phụ thuộc có người chịu trách nhiệm.
+- Đường tích hợp R1 là REST: OTP gọi đồng bộ, thông báo async đi từ dispatcher outbox của nguồn; broker để phân kỳ sau. Việc phối hợp User, Order, frontend, chủ đích Push, vận hành là phụ thuộc có người chịu trách nhiệm.
 
 Đợt đầu phải kiểm chứng đủ năm kênh trên client và môi trường đã chọn. Không yêu cầu mỗi luồng phải dùng cả năm kênh.
 
@@ -97,7 +100,7 @@ Notification không cần biết session OTP hoặc toàn bộ trạng thái đ�
 | [NotificationPort](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationPort.java), [Notification](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/Notification.java), [Receipt](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotificationReceipt.java) | User truyền reference, channel, destination, template, parameters, expiresAt; receipt hiện chỉ có providerReference. | Adapter cần ánh xạ hợp đồng mới; một chuỗi reference không tự chứng minh gửi thật. |
 | [OtpDeliveryPolicy](../../user-spf/services/users-core-service/src/main/java/com/supership/users/authentication/application/OtpDeliveryPolicy.java), [OtpSessionService](../../user-spf/services/users-core-service/src/main/java/com/supership/users/authentication/application/OtpSessionService.java) | Mỗi lần gửi có deliveryId riêng; User gửi trước khi cập nhật mã/counters; timeout không tự retry, mã trước có thể còn dùng được. | Không kích hoạt retry nền OTP ngoài chỉ dẫn; kết quả đến muộn không làm Notification quyết định mã có hiệu lực. |
 | [InvitationLinkNotifier](../../user-spf/services/users-core-service/src/main/java/com/supership/users/invitation/InvitationLinkNotifier.java), [NotifyAfterCommit](../../user-spf/services/users-core-service/src/main/java/com/supership/users/notification/application/NotifyAfterCommit.java) | Tin sau sự việc được gửi sau commit; lỗi gửi không đảo thay đổi nguồn. | Nguồn cần cơ chế bàn giao bền vững nếu phải phát lại sau lỗi; callback trong bộ nhớ chưa đủ chứng minh không mất tin. |
-| [OutboxWriter](../../order-spf/src/main/java/vn/supership/superplatform/order/platform/outbox/OutboxWriter.java) | Order ghi event cùng giao dịch; chú thích ghi dispatcher chưa được xây dựng. | Có outbox chưa có nghĩa Notification đã nhận; hợp đồng giao thất bại và đường phát là công việc của kế hoạch tích hợp. |
+| [OutboxWriter](../../order-spf/src/main/java/vn/supership/superplatform/order/platform/outbox/OutboxWriter.java) | Order ghi event cùng giao dịch; chú thích ghi dispatcher chưa được xây dựng. | Có outbox chưa có nghĩa Notification đã nhận; dispatcher outbox gọi REST Notification cho 10 mốc là công việc của kế hoạch tích hợp (CF-04). |
 | [Chuông Shop](../../shop-fe/apps/business-web/features/notification-center/use-notification-center.ts) | Hiện có giao diện chuông và hành động device trust gọi User; đọc có phần lưu theo browser session. | Chuông được nối lại vào hộp tin của Notitek; trạng thái đọc mới phải có nguồn sự thật rõ ràng ở backend. |
 | [Thông báo lời mời nội bộ](../../internal-fe/features/employees/queries/use-employee-invitation-queries.ts) | Giao diện hiện thông báo hệ thống chưa gửi email. | Hoàn thành tích hợp phải sửa thông điệp theo kết quả thật, không giữ lời hứa sai. |
 | [ResolveDtos](../../user-spf/services/users-core-service/src/main/java/com/supership/users/accesscontext/api/ResolveDtos.java) | Quyết định ALLOW/DENY/NOT_EVALUATED theo hành động/tài nguyên; permissions là gợi ý UI; scope có thể là bộ lọc rộng. | Backend cần quyết định phù hợp; bộ lọc hoặc danh sách permissions không thay kiểm tra quyền trên tài nguyên. |
@@ -114,7 +117,7 @@ Mốc HEAD tham khảo: User 3363aa17; Order 3eb3111f; Shop FE ab6198b; Internal
 | Luồng thông báo | Mục tiêu và chính sách xử lý | Báo giao thất bại. |
 | Trường hợp gửi | Nhóm người nhận, nội dung và tiêu chí riêng trong luồng | Shop xem In-app/Push; người nhận hàng nhận ZNS/SMS. |
 | Bản thông báo | Nội dung cho một người trong một trường hợp gửi | Tin của thành viên Shop A. |
-| Đích kênh | Địa chỉ/token hoặc hộp tin dùng để đưa tin | Email lời mời; một đích Push của app đã chọn. |
+| Đích kênh | Địa chỉ/token hoặc hộp tin dùng để đưa tin | Email hoặc số điện thoại nhận lời mời; một đích Push của app đã chọn. |
 | Lần thử gửi | Một lần giao yêu cầu cho nhà cung cấp | Lần gọi SMS thứ nhất. |
 | Bằng chứng kênh | Phản hồi có thể kiểm chứng | Provider nhận; xác nhận giao; bounce; kết quả tra cứu. |
 | Trạng thái đọc | Trạng thái In-app của người nhận | Đã đánh dấu đọc trên hộp tin. |
@@ -441,7 +444,7 @@ Hợp đồng phải liệt kê lỗi có thể sửa, lỗi có thể retry và
 | Mã | Yêu cầu bắt buộc |
 |---|---|
 | SRS-F17.01 | Email phải dùng địa chỉ do nguồn xác nhận, sender/brand và mẫu được duyệt. Gmail là loại địa chỉ nhận Email, không phải kênh thứ sáu. |
-| SRS-F17.02 | Email lời mời phải giữ đúng tổ chức/Shop, người mời và link nguồn; không yêu cầu người nhận đã có membership trước khi gửi lời mời. |
+| SRS-F17.02 | Lời mời (Email, hoặc SMS theo SRS-F18 khi User cấp đích là số điện thoại) phải giữ đúng tổ chức (`organization_id`), người mời khi là lời mời thành viên Shop và link nguồn; không yêu cầu người nhận đã có membership trước khi gửi lời mời. Link hết thời gian lưu bí mật thì lấy link mới qua API cấp lại link của User, không kéo dài lưu link cũ. |
 | SRS-F17.03 | Gửi cho nhiều người phải bảo vệ địa chỉ và dữ liệu riêng của từng người; không lộ danh sách người nhận khác qua To/Cc hoặc nội dung cá nhân hóa. |
 | SRS-F17.04 | Hệ thống phải ghi phản hồi nhận thư, bounce/chặn và bằng chứng giao theo khả năng provider; không dùng việc mở pixel hoặc provider nhận thay cho chấp nhận lời mời. |
 | SRS-F17.05 | Email chứa nội dung nhạy cảm phải tuân thủ chính sách link/đính kèm đã duyệt; link đã hết hạn/thu hồi vẫn do User kiểm tra khi mở. |
@@ -510,13 +513,13 @@ Hợp đồng phải liệt kê lỗi có thể sửa, lỗi có thể retry và
 
 Notitek là hệ thống mới, không có hệ thống thông báo/ZNS cũ cần chuyển đổi (PO chốt 09/10/2026). Nhóm này, gồm SRS-F22.01 đến SRS-F22.05 (chuyển đổi nguồn cũ, shadow, rollback về nguồn cũ), được loại bỏ. Mã SRS-F22 được giữ để không đổi số các nhóm khác và không được tái sử dụng. Yêu cầu chống nhân tin và một ID nguồn một mục trong hộp tin vẫn do SRS-F02 và SRS-F10.02 đảm nhận.
 
-## 7. Cách áp dụng vào bốn luồng ưu tiên
+## 7. Cách áp dụng vào các luồng R1
 
 Phần này diễn giải các yêu cầu ở mục 6 bằng tình huống người dùng/module thực tế. Không tạo thêm trách nhiệm nghiệp vụ cho Notification.
 
 ### 7.1. R1-OTP — User gửi mã xác thực
 
-1. User chọn liên hệ, phát hành mã và reference cho lần gửi, cấp hạn gửi và cửa sổ xử lý có phản hồi.
+1. User chọn liên hệ (số điện thoại → SMS, email → Email), phát hành mã và reference cho lần gửi, cấp mục đích (`purpose`), hạn gửi và cửa sổ xử lý có phản hồi.
 2. Notification kiểm tra nguồn, chống trùng, mẫu, đích, kết nối SMS và điều kiện phí; không cần người nhận đã có session/membership.
 3. Notification gửi theo chính sách đồng bộ đã thống nhất và trả đúng mức bằng chứng. Cấu hình R1 phải có phản hồi gửi thật tối thiểu do provider tiếp nhận; nếu User cần mức cao hơn thì phải có hợp đồng và bằng chứng kênh tương ứng.
 4. User quyết định có kích hoạt mã và cập nhật counters hay không. Notification không xác minh mã hoặc cập nhật session.
@@ -534,7 +537,7 @@ Cửa sổ chờ phản hồi, hạn bắt đầu thử, TTL mã và thời đi�
 
 ### 7.2. R1-INVITE — Lời mời nhân viên/thành viên
 
-User chỉ bàn giao lời mời sau commit. Email có đúng tên tổ chức/Shop, người mời và link User cấp. Người được mời có thể chưa có membership. Notification báo tiến trình gửi riêng; lời mời vẫn tồn tại khi email lỗi.
+User chỉ bàn giao lời mời sau commit, qua outbox của User. Email hoặc SMS có đúng tên tổ chức, người mời (lời mời thành viên Shop) và link User cấp; lời mời nhân viên dùng tổ chức nội bộ trong `organization_id`. Khi cần thử lại sau thời gian lưu link, Notification gọi API cấp lại link của User; User từ chối vì lời mời đã dùng/thu hồi/hết hạn thì bản tin dừng với `SOURCE_INVALIDATED`. Người được mời có thể chưa có membership. Notification báo tiến trình gửi riêng; lời mời vẫn tồn tại khi email lỗi.
 
 Hai lời mời cho cùng email ở hai Shop là hai đối tượng độc lập. User cấp lại/thu hồi/chấp nhận lời mời thì User cấp chỉ dẫn dừng bản chờ; Notification không tạo membership và không kết luận “đã chấp nhận” từ email đã giao.
 
@@ -548,7 +551,7 @@ Internal FE phải cập nhật thông điệp theo kết quả thật: “đã 
 
 ### 7.3. R1-ORDER — Order xác nhận giao thất bại
 
-Order bàn giao sự việc đã chốt, người nhận/căn cứ, liên hệ giao dịch, chặng/lần giao khi cần, dữ liệu công bố và chỉ dẫn còn cần gửi. Notification không tiêu thụ tracking NVC thô để kết luận thất bại.
+R1 gồm đủ 10 mốc Order (mục 7.5); giao thất bại là mốc có nhiều trường hợp gửi nhất nên được diễn giải chi tiết ở đây. Order bàn giao sự việc đã chốt, người nhận/căn cứ, liên hệ giao dịch, chặng/lần giao khi cần, dữ liệu công bố và chỉ dẫn còn cần gửi. Notification không tiêu thụ tracking NVC thô để kết luận thất bại.
 
 - Trường hợp Shop: bản tin In-app/Push đúng Shop/app, link mở Order có kiểm tra quyền.
 - Trường hợp liên hệ của đơn: ZNS theo mẫu được duyệt, SMS dự phòng theo điều kiện cụ thể.
@@ -561,7 +564,7 @@ Order bàn giao sự việc đã chốt, người nhận/căn cứ, liên hệ g
 | ZNS timeout | Giữ chưa rõ; SMS chưa được chạy nếu không có chính sách cho trường hợp chưa rõ | SRS-F07/09/19; AT-09 |
 | Order hủy mục tiêu trong lúc event cũ đến trễ | Dừng đúng tập theo hợp đồng; không tự hủy sự việc độc lập khác của cùng đơn | SRS-F02/06; AT-10/23 |
 
-Order chịu trách nhiệm đường phát bền vững và ngữ nghĩa sự việc. Việc ghi một dòng outbox không được dùng làm bằng chứng Notification đã tiếp nhận.
+Order chịu trách nhiệm đường phát bền vững và ngữ nghĩa sự việc. R1: dispatcher outbox của Order gọi REST Notification, chỉ đánh dấu đã gửi khi nhận 2xx và retry nguyên body cùng reference; broker để phân kỳ sau. Việc ghi một dòng outbox không được dùng làm bằng chứng Notification đã tiếp nhận.
 
 ### 7.4. R1-SECURITY — Cảnh báo và yêu cầu về thiết bị
 
@@ -573,6 +576,26 @@ Cảnh báo thuộc tài khoản và xuất hiện trên app được chính sá
 | Đổi Shop khi cảnh báo đang chờ | Vẫn thuộc chủ tài khoản, không bị chuyển thành tin công việc của Shop mới | SRS-F05/08/10; AT-08/15 |
 | User xử lý yêu cầu trên thiết bị khác | Tải lại lấy trạng thái nguồn; nút không còn hợp lệ bị vô hiệu, trạng thái đọc vẫn riêng | SRS-F08/10; AT-13/26 |
 | Cùng cảnh báo được phát lại | Một mục theo ID nguồn, giữ hành động User | SRS-F02/10; AT-14 |
+
+### 7.5. R1-ORDER — Chín mốc Order còn lại và người nhận vận hành
+
+Order phát thêm `order.created`, `order.cancelled`, `order.pickup_failed`, `order.picked_up`, `order.delivered`, `order.partially_delivered`, `order.return_confirmed`, `order.returned` và `order.sla_breached` qua dispatcher outbox. Mỗi mốc gửi kèm selector Shop, liên hệ người nhận hàng và tùy chọn selector vận hành. Notification gửi In-app (và Push tùy chọn) cho Shop; In-app cho vận hành chỉ trong data scope của Shop. R1 chỉ nhắn người nhận hàng ở mốc giao thất bại; mốc khác không lưu liên hệ đó.
+
+| Tình huống kiểm chứng | Kết quả mong đợi | Truy vết |
+|---|---|---|
+| Mỗi mốc được Order phát một lần | Shop đúng organization thấy một tin In-app, mở đúng Order | SRS-F01/03/05/08; AT-33 |
+| Vận hành ngoài data scope Shop | Không nhận và không xem được tin | SRS-F05/13; AT-34 |
+| Dispatcher retry sau timeout | Cùng reference, không tạo tin thứ hai | SRS-F02; AT-35 |
+| Mốc không nhắn người nhận | Liên hệ không xuất hiện trong dữ liệu lưu, tra cứu hay log | SRS-F13; AT-36 |
+
+### 7.6. R1-ACCOUNT — Thông báo tài khoản User
+
+User gửi `user.account_activation` (Email, link kích hoạt), `user.password_changed` (SMS/Email tới liên hệ đã xác minh, đạt khi một kênh đạt), `user.identifier_changed` (gửi tới liên hệ cũ, chỉ có giá trị mới đã che) và `user.employee_offboarded`. User quyết định sự việc và liên hệ; Notification không suy liên hệ từ hồ sơ.
+
+| Tình huống kiểm chứng | Kết quả mong đợi | Truy vết |
+|---|---|---|
+| Đổi mật khẩu khi SMS lỗi, Email đạt | Kết quả tổng hợp đạt; lỗi SMS vẫn hiển thị | SRS-F09; AT-32 |
+| Link kích hoạt quá thời gian lưu khi cần thử lại | Lấy link mới từ User; tài khoản đã kích hoạt thì dừng `SOURCE_INVALIDATED` | SRS-F13/17; AT-31 |
 
 ## 8. Ý nghĩa trạng thái và quy tắc tổng hợp
 
@@ -734,8 +757,8 @@ Ngày 08/10/2026, PO đã chốt giá trị khởi điểm cho cả 12 tham số
 | Quyết định trong phạm vi | Điều SRS đã xác định | Đầu ra còn cần chốt |
 |---|---|---|
 | DEC-01 | Đủ 5 kênh; app/client phải xác nhận, không tự tạo app | Client Push thực và app được nghiệm thu. |
-| DEC-02 | Nhận/tra/hủy/kết quả có nghĩa rõ, chống trùng và lỗi an toàn | OpenAPI/schema, xác thực, tên sự việc và đường phát User/Order. |
-| DEC-03 | Tách tài khoản/công việc, xử lý nền không dùng phiên người nhận | Tập nhận Shop, căn cứ resolver/service và độ mới. |
+| DEC-02 | Nhận/tra/hủy/kết quả có nghĩa rõ, chống trùng và lỗi an toàn; R1 REST từ dispatcher outbox, snake_case, `X-Correlation-Id` | OpenAPI R1 đã có (17 profile) chờ User/Order ký (CF-03); client credentials (CF-09); dispatcher Order (CF-04). |
+| DEC-03 | Tách tài khoản/công việc, xử lý nền không dùng phiên người nhận; context `organization_id` + `application_id`; Order gửi liên hệ người nhận | Tập nhận Shop và vận hành (`notification.order_ops_alert.receive`), căn cứ resolver/service và độ mới. |
 | DEC-04 | Mục đích tách tính bắt buộc; không suy consent, Marketing ngoài R1 | Danh sách luồng bắt buộc và kênh được phép thật. |
 | DEC-05 | OTP cần bằng chứng gửi thật; timeout không kích hoạt retry nền; User sở hữu mã | Consumer User xác nhận mức phản hồi và SRS-P01, ánh xạ receipt/lỗi. |
 | DEC-06 | Retry hữu hạn, kiểm tra hạn, đo từng đoạn và tải | Các giá trị SRS-P02 đến SRS-P08/P10 khi liên quan. |
@@ -746,6 +769,8 @@ Ngày 08/10/2026, PO đã chốt giá trị khởi điểm cho cả 12 tham số
 | DEC-11 | Đã hủy: không có hệ thống cũ cần chuyển đổi (09/10/2026) | Không còn đầu ra. OA/mẫu ZNS đăng ký mới theo CF-08. |
 | DEC-12 | Hành động có quyền riêng; ALLOW đúng tài nguyên | Catalog action/resource/scope, người được cấp và contract tests User/Authorization. |
 
+Hướng xử lý chốt ngày 11/10/2026 cho `subject_ref`, cách User xử lý kết quả OTP chưa rõ và ánh xạ trạng thái gửi hiển thị cho frontend nội bộ nằm ở DEC 1.6 mục 2.14–2.15; SRS giữ ở mức hành vi và không lặp lại tên trường.
+
 PO đã chốt kết quả cho cả 12 DEC tại [Quyết định PO cho các DEC](<Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>); cột "Đầu ra còn cần chốt" nay là các artifact kỹ thuật (schema, ADR, contract test) và xác nhận của bên sở hữu tại mục 4 tài liệu đó. Các giá trị/đầu ra này chặn phần tương ứng. Có thể làm hợp đồng, thiết kế và kiểm thử phần không phụ thuộc chúng; không coi toàn bộ SRS chưa có giá trị khi một provider chưa được chọn.
 
 ## 12. Truy vết và tiêu chí nghiệm thu
@@ -755,15 +780,17 @@ PO đã chốt kết quả cho cả 12 DEC tại [Quyết định PO cho các DE
 | Phần triển khai | Nhóm SRS chức năng chính | UC | Story | AT chính |
 |---|---|---|---|---|
 | Cấu hình, mẫu, kết nối | SRS-F03/04/12/15/20/21 | UC-NTF-04/07/08/15 | ST-01/11 | AT-17/18/24/27 |
-| OTP SMS | SRS-F01/02/03/04/05/06/07/09/13/14/15/18/20/21 | UC-USR-01 | ST-02 | AT-01/02/03/04/19/21/22/23/28 |
-| Email lời mời | SRS-F01/02/04/05/06/07/09/13/14/15/17/20 | UC-USR-03/04 | ST-03 | AT-02/03/05/06/07/08/21/24/28 |
-| Sự việc Order và dừng | SRS-F01/02/03/05/06/09 | UC-ORD-05, UC-NTF-01/03/10 | ST-04 | AT-02/09/10/21/22/23 |
-| In-app Shop | SRS-F05/08/09/13 | UC-ORD-05, UC-NTF-13 | ST-05 | AT-08/11/15/21/25/26 |
+| OTP SMS/Email | SRS-F01/02/03/04/05/06/07/09/13/14/15/17/18/20/21 | UC-USR-01 | ST-02/14 | AT-01/02/03/04/19/21/22/23/28/29/38 |
+| Lời mời Email/SMS | SRS-F01/02/04/05/06/07/09/13/14/15/17/18/20 | UC-USR-03/04 | ST-03/14 | AT-02/03/05/06/07/08/21/24/28/30/31/40 |
+| Thông báo tài khoản User | SRS-F01/02/05/07/09/13/17/18 | UC-USR-01/02/03/04/05/06/07 | ST-14 | AT-29/30/31/32/37 |
+| Sự việc Order và dừng | SRS-F01/02/03/05/06/09 | UC-ORD-05, UC-NTF-01/03/10 | ST-04/15 | AT-02/09/10/21/22/23/35/37 |
+| Chín mốc Order còn lại, vận hành | SRS-F01/02/03/05/08/09/13 | UC-ORD-01/03/05/06/09/12/13/14/15/16, UC-NTF-13 | ST-15 | AT-33/34/35/36/39/41 |
+| In-app Shop | SRS-F05/08/09/13 | UC-ORD-05, UC-NTF-13 | ST-05 | AT-08/11/15/21/25/26/41 |
 | Push | SRS-F05/07/09/13/15/16/21 | UC-ORD-05, UC-NTF-08/09 | ST-06 | AT-11/12/24/25/26/27 |
 | ZNS/SMS dự phòng | SRS-F05/07/09/13/14/15/18/19/20/21 | UC-ORD-05 | ST-07 | AT-09/11/19/24/25 |
 | Cảnh báo thiết bị | SRS-F02/05/08/09/10/13 | UC-USR-09 | ST-08 | AT-03/08/13/14/15/21/26/28 |
-| Tra cứu/vận hành | SRS-F09/11/12/13/14/15/21 | UC-NTF-12 | ST-09 | AT-03/16/17/18/19/25/27/28 |
-| Hợp đồng, nghiệm thu và đo giá trị | Nhóm liên quan trong SRS-F01 đến SRS-F21; SRS-N01 đến SRS-N07 | Các UC được chọn | ST-11/12/13 | Ca liên quan trong AT-01 đến AT-28 và chỉ số nguồn. |
+| Tra cứu/vận hành | SRS-F09/11/12/13/14/15/21 | UC-NTF-12 | ST-09 | AT-03/16/17/18/19/25/27/28/39 |
+| Hợp đồng, nghiệm thu và đo giá trị | Nhóm liên quan trong SRS-F01 đến SRS-F21; SRS-N01 đến SRS-N07 | Các UC được chọn | ST-11/12/13 | Ca liên quan trong AT-01 đến AT-41 và chỉ số nguồn. |
 
 Chi tiết AT nằm ở [backlog và nghiệm thu](<Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU.md>). Phạm vi SRS mở rộng năng lực tối thiểu của các story hiện có, không tự bổ sung release Marketing hoặc module tài chính.
 
@@ -792,7 +819,7 @@ SRS chốt yêu cầu quan sát được; việc chọn giải pháp hoặc bậ
 | Mã | Quy tắc của baseline |
 |---|---|
 | SRS-PO01 | Notification là năng lực gửi dùng chung; không sở hữu OTP, trạng thái đơn, membership, quyết định bảo mật hoặc sổ tài chính. |
-| SRS-PO02 | Release đầu giữ bốn lát cắt và đủ năm kênh; không bắt mỗi luồng dùng mọi kênh và không mở rộng Marketing. |
+| SRS-PO02 | Release đầu gồm OTP, lời mời, bốn thông báo tài khoản User, cảnh báo thiết bị và 10 mốc Order (DEC 1.6 mục 2.13) và đủ năm kênh; không bắt mỗi luồng dùng mọi kênh và không mở rộng Marketing. |
 | SRS-PO03 | Accepted chỉ sau ghi nhận bền vững; provider nhận/giao/đọc/nghiệp vụ hoàn tất là các mức khác nhau. |
 | SRS-PO04 | Replay đúng dữ liệu giữ cùng yêu cầu; cùng khóa dữ liệu xung đột bị từ chối; không tự ghi đè và không retry phần đã đạt. |
 | SRS-PO05 | Bí mật không được tự retry nền sau cửa sổ/chỉ dẫn nguồn; timeout không chứng minh thất bại và không tự kích hoạt fallback. |

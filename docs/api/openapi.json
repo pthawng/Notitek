@@ -1,0 +1,4566 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Notitek common notification command API",
+    "version": "1.0.0-draft.5",
+    "description": "Proposed implementation contract, 2026-10-11. One extensible command API for authorized SuperPlatform services; JSON fields are snake_case per platform convention. R1 sources call it over REST (Order from its outbox dispatcher); broker integration is deferred. See README.md for runtime invariants, profiles and policies. Inbox, Push registration, provider webhooks and the User link-reissue API remain separate contracts."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Deployment gateway; no production host assumed."
+    }
+  ],
+  "security": [
+    {
+      "ServiceAccessToken": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Notifications"
+    }
+  ],
+  "paths": {
+    "/v1/notifications": {
+      "post": {
+        "operationId": "sendNotification",
+        "summary": "Submit a notification using a registered type profile",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "description": "Send: MUST equal source_ref. Cancel: independent command reference, namespace cancellation. No PII or secret."
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Platform correlation id, echoed in responses/logs; excluded from idempotency comparison and never a deduplication key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sync result (including FAILED/UNKNOWN), or current snapshot of an async replay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                },
+                "examples": {
+                  "otp-accepted": {
+                    "value": {
+                      "error": false,
+                      "message": "Provider accepted request",
+                      "data": {
+                        "notification_id": "ntf-demo",
+                        "source": "user",
+                        "source_ref": "user.otp-001",
+                        "type": "user.otp",
+                        "type_version": 1,
+                        "mode": "sync",
+                        "admission": "ACCEPTED",
+                        "processing_state": "CLOSED",
+                        "outcome": "ACHIEVED",
+                        "sync_result": "PROVIDER_ACCEPTED",
+                        "revision": 1,
+                        "config_version": "config-demo-v1",
+                        "created_at": "2026-10-11T10:00:00+07:00",
+                        "updated_at": "2026-10-11T10:00:00+07:00",
+                        "idempotency_expires_at": "2026-10-18T10:00:00+07:00",
+                        "deliveries": [
+                          {
+                            "delivery_id": "delivery-demo",
+                            "recipient_ref": "otp-recipient",
+                            "channel": "SMS",
+                            "requirement": "REQUIRED",
+                            "requirement_group": "otp-sms",
+                            "state": "PROVIDER_ACCEPTED",
+                            "attempt_count": 1,
+                            "next_attempt_at": null,
+                            "updated_at": "2026-10-11T10:00:00+07:00"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "otp-unknown": {
+                    "value": {
+                      "error": false,
+                      "message": "Provider outcome is unknown",
+                      "data": {
+                        "notification_id": "ntf-demo",
+                        "source": "user",
+                        "source_ref": "user.otp-001",
+                        "type": "user.otp",
+                        "type_version": 1,
+                        "mode": "sync",
+                        "admission": "ACCEPTED",
+                        "processing_state": "CLOSED",
+                        "outcome": "UNKNOWN",
+                        "sync_result": "UNKNOWN",
+                        "revision": 1,
+                        "config_version": "config-demo-v1",
+                        "created_at": "2026-10-11T10:00:00+07:00",
+                        "updated_at": "2026-10-11T10:00:00+07:00",
+                        "idempotency_expires_at": "2026-10-18T10:00:00+07:00",
+                        "deliveries": [
+                          {
+                            "delivery_id": "delivery-demo",
+                            "recipient_ref": "otp-recipient",
+                            "channel": "SMS",
+                            "requirement": "REQUIRED",
+                            "requirement_group": "otp-sms",
+                            "state": "UNKNOWN",
+                            "attempt_count": 1,
+                            "next_attempt_at": null,
+                            "updated_at": "2026-10-11T10:00:00+07:00"
+                          }
+                        ],
+                        "reason_code": "PROVIDER_TIMEOUT"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Relative URL of GET request resource."
+              },
+              "Idempotency-Replayed": {
+                "schema": {
+                  "type": "boolean"
+                },
+                "description": "True only when existing request is reused."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "202": {
+            "description": "New async request and job outbox committed durably; not evidence of sending.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                },
+                "example": {
+                  "error": false,
+                  "message": "Request accepted durably",
+                  "data": {
+                    "notification_id": "ntf-demo",
+                    "source": "user",
+                    "source_ref": "user.invitation-001",
+                    "type": "user.invitation",
+                    "type_version": 1,
+                    "mode": "async",
+                    "admission": "ACCEPTED",
+                    "processing_state": "PENDING",
+                    "outcome": "PENDING",
+                    "revision": 1,
+                    "config_version": "config-demo-v1",
+                    "created_at": "2026-10-11T10:00:00+07:00",
+                    "updated_at": "2026-10-11T10:00:00+07:00",
+                    "idempotency_expires_at": "2026-10-18T10:00:00+07:00",
+                    "deliveries": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Relative URL of GET request resource."
+              },
+              "Idempotency-Replayed": {
+                "schema": {
+                  "type": "boolean"
+                },
+                "description": "True only when existing request is reused."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, invalid schema or missing header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "403": {
+            "description": "Caller is not authorized for type, action, app or scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency payload conflict or concurrent sync request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": true,
+                  "message": "Reference already used with different input",
+                  "data": {
+                    "code": "IDEMPOTENCY_CONFLICT",
+                    "trace_id": "trace-demo",
+                    "details": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "description": "Present only for IDEMPOTENCY_IN_PROGRESS."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "415": {
+            "description": "Only application/json is supported.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "422": {
+            "description": "Unknown type/version, invalid profile, stale input, expired deadline or invalid business constraints.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "429": {
+            "description": "Admission rate limit; not accepted. Retry-After in seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "description": "Seconds before retry; deadlines still apply."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "503": {
+            "description": "Admission unavailable; not accepted by this handler. Transport/proxy errors require reconciliation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendRequest"
+              },
+              "examples": {
+                "account-activation": {
+                  "summary": "account-activation (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "user.account_activation-001",
+                    "type": "user.account_activation",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "ACCOUNT",
+                      "application_id": "app-internal-web"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "CONTACT",
+                        "recipient_ref": "activation-recipient",
+                        "email": "staff@example.invalid"
+                      }
+                    ],
+                    "data": {
+                      "activation_id": "activation-demo",
+                      "display_name": "Demo"
+                    },
+                    "send_deadline": "2026-10-12T10:00:00+07:00",
+                    "expires_at": "2026-10-12T10:00:00+07:00",
+                    "secrets": {
+                      "activation_url": "https://internal.example.invalid/activate?token=demo-only"
+                    }
+                  }
+                },
+                "device-alert": {
+                  "summary": "device-alert (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "user.device_alert-001",
+                    "type": "user.device_alert",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "ACCOUNT",
+                      "application_id": "app-shop-web"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "ACCOUNT",
+                        "recipient_ref": "owner-demo",
+                        "account_id": "account-demo"
+                      }
+                    ],
+                    "data": {
+                      "alert_id": "alert-demo",
+                      "device_label": "Demo browser",
+                      "location_label": "Demo location"
+                    },
+                    "send_deadline": "2026-10-11T10:15:00+07:00",
+                    "expires_at": "2026-10-11T10:15:00+07:00"
+                  }
+                },
+                "employee-invitation": {
+                  "summary": "employee-invitation (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "user.invitation-002",
+                    "type": "user.invitation",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-internal-web",
+                      "organization_id": "org-corp-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "CONTACT",
+                        "recipient_ref": "invitee-demo-2",
+                        "phone": "+84900000001"
+                      }
+                    ],
+                    "data": {
+                      "invitation_id": "invitation-demo-2",
+                      "invitation_kind": "EMPLOYEE",
+                      "workspace_name": "Org Demo"
+                    },
+                    "send_deadline": "2026-10-12T10:00:00+07:00",
+                    "expires_at": "2026-10-13T10:00:00+07:00",
+                    "secrets": {
+                      "invitation_url": "https://internal.example.invalid/invitations/accept?token=demo-only"
+                    },
+                    "cancel_group": "invitation-demo-2"
+                  }
+                },
+                "employee-offboarded": {
+                  "summary": "employee-offboarded (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "user.employee_offboarded-001",
+                    "type": "user.employee_offboarded",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-internal-web",
+                      "organization_id": "org-corp-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "CONTACT",
+                        "recipient_ref": "former-employee",
+                        "email": "staff@example.invalid"
+                      }
+                    ],
+                    "data": {
+                      "offboarding_id": "offboarding-demo",
+                      "organization_name": "Org Demo",
+                      "effective_at": "2026-10-11T17:00:00+07:00"
+                    },
+                    "send_deadline": "2026-10-12T10:00:00+07:00"
+                  }
+                },
+                "identifier-changed": {
+                  "summary": "identifier-changed (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "user.identifier_changed-001",
+                    "type": "user.identifier_changed",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "ACCOUNT",
+                      "application_id": "app-shop-web"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "CONTACT",
+                        "recipient_ref": "previous-phone",
+                        "phone": "+84900000000"
+                      }
+                    ],
+                    "data": {
+                      "identifier_type": "PHONE",
+                      "masked_new_value": "+84*****0001"
+                    },
+                    "send_deadline": "2026-10-12T10:00:00+07:00"
+                  }
+                },
+                "invitation": {
+                  "summary": "invitation (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "user.invitation-001",
+                    "type": "user.invitation",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-shop-web",
+                      "organization_id": "org-shop-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "CONTACT",
+                        "recipient_ref": "invitee-demo",
+                        "email": "invitee@example.invalid"
+                      }
+                    ],
+                    "data": {
+                      "invitation_id": "invitation-demo",
+                      "invitation_kind": "SHOP_MEMBER",
+                      "workspace_name": "Shop Demo",
+                      "inviter_name": "Demo"
+                    },
+                    "send_deadline": "2026-10-12T10:00:00+07:00",
+                    "expires_at": "2026-10-13T10:00:00+07:00",
+                    "secrets": {
+                      "invitation_url": "https://shop.example.invalid/invitations/accept?token=demo-only"
+                    },
+                    "cancel_group": "invitation-demo"
+                  }
+                },
+                "order-cancelled": {
+                  "summary": "order-cancelled (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "order-demo:order.cancelled",
+                    "subject_ref": "order-demo",
+                    "type": "order.cancelled",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-shop-web",
+                      "organization_id": "org-shop-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "AUDIENCE",
+                        "recipient_ref": "shop-team",
+                        "audience_code": "SHOP_ORDER_ALERT_RECEIVERS"
+                      }
+                    ],
+                    "data": {
+                      "order_id": "order-demo",
+                      "order_code": "12345678901231",
+                      "order_status": "SPF-0201",
+                      "tracking_url": "https://tracking.example.invalid/orders/12345678901231",
+                      "status_reason_code": "SHOP_REQUESTED"
+                    },
+                    "send_deadline": "2026-10-11T22:00:00+07:00"
+                  }
+                },
+                "order-created": {
+                  "summary": "order-created (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "order-demo:order.created",
+                    "subject_ref": "order-demo",
+                    "type": "order.created",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-shop-web",
+                      "organization_id": "org-shop-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "AUDIENCE",
+                        "recipient_ref": "shop-team",
+                        "audience_code": "SHOP_ORDER_ALERT_RECEIVERS"
+                      }
+                    ],
+                    "data": {
+                      "order_id": "order-demo",
+                      "order_code": "12345678901231",
+                      "order_status": "SPF-0301",
+                      "tracking_url": "https://tracking.example.invalid/orders/12345678901231"
+                    },
+                    "send_deadline": "2026-10-11T22:00:00+07:00"
+                  }
+                },
+                "order-delivered": {
+                  "summary": "order-delivered (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "order-demo:order.delivered",
+                    "subject_ref": "order-demo",
+                    "type": "order.delivered",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-shop-web",
+                      "organization_id": "org-shop-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "AUDIENCE",
+                        "recipient_ref": "shop-team",
+                        "audience_code": "SHOP_ORDER_ALERT_RECEIVERS"
+                      }
+                    ],
+                    "data": {
+                      "order_id": "order-demo",
+                      "order_code": "12345678901231",
+                      "order_status": "SPF-0901",
+                      "tracking_url": "https://tracking.example.invalid/orders/12345678901231"
+                    },
+                    "send_deadline": "2026-10-11T22:00:00+07:00"
+                  }
+                },
+                "order-delivery-failed": {
+                  "summary": "order-delivery-failed (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "order-demo:order.delivery_failed:failure-demo",
+                    "subject_ref": "order-demo",
+                    "type": "order.delivery_failed",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-shop-web",
+                      "organization_id": "org-shop-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "AUDIENCE",
+                        "recipient_ref": "shop-team",
+                        "audience_code": "SHOP_ORDER_ALERT_RECEIVERS"
+                      },
+                      {
+                        "kind": "CONTACT",
+                        "recipient_ref": "consignee-demo",
+                        "phone": "+84900000000",
+                        "email": "consignee@example.invalid"
+                      }
+                    ],
+                    "data": {
+                      "order_id": "order-demo",
+                      "order_code": "12345678901231",
+                      "order_status": "SPF-0802",
+                      "tracking_url": "https://tracking.example.invalid/orders/12345678901231",
+                      "delivery_failure_id": "failure-demo",
+                      "reason_code": "RECIPIENT_UNAVAILABLE"
+                    },
+                    "send_deadline": "2026-10-11T22:00:00+07:00",
+                    "cancel_group": "failure-demo"
+                  }
+                },
+                "order-partially-delivered": {
+                  "summary": "order-partially-delivered (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "order-demo:order.partially_delivered",
+                    "subject_ref": "order-demo",
+                    "type": "order.partially_delivered",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-shop-web",
+                      "organization_id": "org-shop-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "AUDIENCE",
+                        "recipient_ref": "shop-team",
+                        "audience_code": "SHOP_ORDER_ALERT_RECEIVERS"
+                      }
+                    ],
+                    "data": {
+                      "order_id": "order-demo",
+                      "order_code": "12345678901231",
+                      "order_status": "SPF-0902",
+                      "tracking_url": "https://tracking.example.invalid/orders/12345678901231"
+                    },
+                    "send_deadline": "2026-10-11T22:00:00+07:00"
+                  }
+                },
+                "order-picked-up": {
+                  "summary": "order-picked-up (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "order-demo:order.picked_up",
+                    "subject_ref": "order-demo",
+                    "type": "order.picked_up",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-shop-web",
+                      "organization_id": "org-shop-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "AUDIENCE",
+                        "recipient_ref": "shop-team",
+                        "audience_code": "SHOP_ORDER_ALERT_RECEIVERS"
+                      }
+                    ],
+                    "data": {
+                      "order_id": "order-demo",
+                      "order_code": "12345678901231",
+                      "order_status": "SPF-0501",
+                      "tracking_url": "https://tracking.example.invalid/orders/12345678901231"
+                    },
+                    "send_deadline": "2026-10-11T22:00:00+07:00"
+                  }
+                },
+                "order-pickup-failed": {
+                  "summary": "order-pickup-failed (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "order-demo:order.pickup_failed:pickup-failure-demo",
+                    "subject_ref": "order-demo",
+                    "type": "order.pickup_failed",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-shop-web",
+                      "organization_id": "org-shop-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "AUDIENCE",
+                        "recipient_ref": "shop-team",
+                        "audience_code": "SHOP_ORDER_ALERT_RECEIVERS"
+                      }
+                    ],
+                    "data": {
+                      "order_id": "order-demo",
+                      "order_code": "12345678901231",
+                      "order_status": "SPF-0402",
+                      "tracking_url": "https://tracking.example.invalid/orders/12345678901231",
+                      "pickup_failure_id": "pickup-failure-demo",
+                      "reason_code": "SENDER_UNAVAILABLE"
+                    },
+                    "send_deadline": "2026-10-11T22:00:00+07:00",
+                    "cancel_group": "pickup-failure-demo"
+                  }
+                },
+                "order-return-confirmed": {
+                  "summary": "order-return-confirmed (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "order-demo:order.return_confirmed",
+                    "subject_ref": "order-demo",
+                    "type": "order.return_confirmed",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-shop-web",
+                      "organization_id": "org-shop-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "AUDIENCE",
+                        "recipient_ref": "shop-team",
+                        "audience_code": "SHOP_ORDER_ALERT_RECEIVERS"
+                      }
+                    ],
+                    "data": {
+                      "order_id": "order-demo",
+                      "order_code": "12345678901231",
+                      "order_status": "SPF-1002",
+                      "tracking_url": "https://tracking.example.invalid/orders/12345678901231"
+                    },
+                    "send_deadline": "2026-10-11T22:00:00+07:00"
+                  }
+                },
+                "order-returned": {
+                  "summary": "order-returned (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "order-demo:order.returned",
+                    "subject_ref": "order-demo",
+                    "type": "order.returned",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-shop-web",
+                      "organization_id": "org-shop-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "AUDIENCE",
+                        "recipient_ref": "shop-team",
+                        "audience_code": "SHOP_ORDER_ALERT_RECEIVERS"
+                      }
+                    ],
+                    "data": {
+                      "order_id": "order-demo",
+                      "order_code": "12345678901231",
+                      "order_status": "SPF-1201",
+                      "tracking_url": "https://tracking.example.invalid/orders/12345678901231"
+                    },
+                    "send_deadline": "2026-10-11T22:00:00+07:00"
+                  }
+                },
+                "order-sla-breached": {
+                  "summary": "order-sla-breached (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "order-demo:order.sla_breached:sla-breach-demo",
+                    "subject_ref": "order-demo",
+                    "type": "order.sla_breached",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "WORKSPACE",
+                      "application_id": "app-shop-web",
+                      "organization_id": "org-shop-demo"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "AUDIENCE",
+                        "recipient_ref": "shop-team",
+                        "audience_code": "SHOP_ORDER_ALERT_RECEIVERS"
+                      },
+                      {
+                        "kind": "AUDIENCE",
+                        "recipient_ref": "ops-team",
+                        "audience_code": "ORDER_OPS_ALERT_RECEIVERS"
+                      }
+                    ],
+                    "data": {
+                      "order_id": "order-demo",
+                      "order_code": "12345678901231",
+                      "order_status": "SPF-0801",
+                      "tracking_url": "https://tracking.example.invalid/orders/12345678901231",
+                      "sla_breach_id": "sla-breach-demo",
+                      "sla_code": "DELIVERY_SLA",
+                      "expected_to": "2026-10-11T09:00:00+07:00"
+                    },
+                    "send_deadline": "2026-10-11T22:00:00+07:00",
+                    "cancel_group": "sla-breach-demo"
+                  }
+                },
+                "otp-email": {
+                  "summary": "otp-email (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "user.otp-002",
+                    "type": "user.otp",
+                    "type_version": 1,
+                    "mode": "sync",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "ACCOUNT",
+                      "application_id": "app-shop-web"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "CONTACT",
+                        "recipient_ref": "otp-recipient",
+                        "email": "user@example.invalid"
+                      }
+                    ],
+                    "data": {
+                      "challenge_id": "challenge-demo-2",
+                      "purpose": "VERIFY_IDENTIFIER"
+                    },
+                    "send_deadline": "2026-10-11T10:00:05+07:00",
+                    "expires_at": "2026-10-11T10:05:00+07:00",
+                    "secrets": {
+                      "otp": "123456"
+                    }
+                  }
+                },
+                "otp": {
+                  "summary": "otp (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "user.otp-001",
+                    "type": "user.otp",
+                    "type_version": 1,
+                    "mode": "sync",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "ACCOUNT",
+                      "application_id": "app-shop-web"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "CONTACT",
+                        "recipient_ref": "otp-recipient",
+                        "phone": "+84900000000"
+                      }
+                    ],
+                    "data": {
+                      "challenge_id": "challenge-demo",
+                      "purpose": "REGISTRATION"
+                    },
+                    "send_deadline": "2026-10-11T10:00:05+07:00",
+                    "expires_at": "2026-10-11T10:05:00+07:00",
+                    "secrets": {
+                      "otp": "123456"
+                    }
+                  }
+                },
+                "password-changed": {
+                  "summary": "password-changed (synthetic data; refresh timestamps before calling)",
+                  "value": {
+                    "source_ref": "user.password_changed-001",
+                    "type": "user.password_changed",
+                    "type_version": 1,
+                    "mode": "async",
+                    "occurred_at": "2026-10-11T10:00:00+07:00",
+                    "context": {
+                      "context_type": "ACCOUNT",
+                      "application_id": "app-shop-web"
+                    },
+                    "recipients": [
+                      {
+                        "kind": "CONTACT",
+                        "recipient_ref": "owner-phone",
+                        "phone": "+84900000000"
+                      },
+                      {
+                        "kind": "CONTACT",
+                        "recipient_ref": "owner-email",
+                        "email": "user@example.invalid"
+                      }
+                    ],
+                    "data": {
+                      "changed_via": "RESET"
+                    },
+                    "send_deadline": "2026-10-12T10:00:00+07:00"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "findNotification",
+        "summary": "Find one request by source_ref, or list requests by subject_ref",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "description": "Defaults to the authenticated source. Only callers with an operations permission may name another source; otherwise a different value is 404/403 without disclosure."
+          },
+          {
+            "name": "source_ref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "description": "Exact lookup; mutually exclusive with subject_ref."
+          },
+          {
+            "name": "subject_ref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "description": "List mode; mutually exclusive with source_ref."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Opaque cursor from meta.next_cursor (list mode)."
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "description": "List mode page size."
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Platform correlation id, echoed in responses/logs; excluded from idempotency comparison and never a deduplication key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "source_ref: current snapshot. subject_ref: cursor page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/NotificationResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NotificationPageResponse"
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, invalid schema or missing header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "403": {
+            "description": "Caller is not authorized for type, action, app or scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or inaccessible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "429": {
+            "description": "Admission rate limit; not accepted. Retry-After in seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "description": "Seconds before retry; deadlines still apply."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "503": {
+            "description": "Admission unavailable; not accepted by this handler. Transport/proxy errors require reconciliation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          }
+        },
+        "description": "Exactly one of source_ref or subject_ref. source_ref returns one snapshot (404 if absent/not visible). subject_ref returns a cursor page ordered by created_at desc, newest first, limited to the authenticated source unless the caller holds an operations permission. Combining both, or cursor/page_size with source_ref, is 400 INVALID_REQUEST (runtime check)."
+      }
+    },
+    "/v1/notifications/{notification_id}": {
+      "get": {
+        "operationId": "getNotification",
+        "summary": "Read authorized request metadata and channel results",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "description": ""
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Platform correlation id, echoed in responses/logs; excluded from idempotency comparison and never a deduplication key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized current snapshot.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, invalid schema or missing header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "403": {
+            "description": "Caller is not authorized for type, action, app or scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or inaccessible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "429": {
+            "description": "Admission rate limit; not accepted. Retry-After in seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "description": "Seconds before retry; deadlines still apply."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "503": {
+            "description": "Admission unavailable; not accepted by this handler. Transport/proxy errors require reconciliation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/notifications/{notification_id}/cancel": {
+      "post": {
+        "operationId": "cancelNotification",
+        "summary": "Stop undispatched work for one request",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "description": ""
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "description": "Send: MUST equal source_ref. Cancel: independent command reference, namespace cancellation. No PII or secret."
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Platform correlation id, echoed in responses/logs; excluded from idempotency comparison and never a deduplication key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancellation fence committed; cannot recall external sends.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancellationResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, invalid schema or missing header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "403": {
+            "description": "Caller is not authorized for type, action, app or scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "404": {
+            "description": "Not found or inaccessible.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency payload conflict or concurrent sync request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": true,
+                  "message": "Reference already used with different input",
+                  "data": {
+                    "code": "IDEMPOTENCY_CONFLICT",
+                    "trace_id": "trace-demo",
+                    "details": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "description": "Present only for IDEMPOTENCY_IN_PROGRESS."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "415": {
+            "description": "Only application/json is supported.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "429": {
+            "description": "Admission rate limit; not accepted. Retry-After in seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "description": "Seconds before retry; deadlines still apply."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "503": {
+            "description": "Admission unavailable; not accepted by this handler. Transport/proxy errors require reconciliation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/notifications/cancel": {
+      "post": {
+        "operationId": "cancelNotificationGroup",
+        "summary": "Cancel a scoped group including commands arriving later",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "description": "Send: MUST equal source_ref. Cancel: independent command reference, namespace cancellation. No PII or secret."
+          },
+          {
+            "name": "X-Correlation-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Platform correlation id, echoed in responses/logs; excluded from idempotency comparison and never a deduplication key."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped tombstone committed for 72 hours, including zero matches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancellationResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON, invalid schema or missing header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "403": {
+            "description": "Caller is not authorized for type, action, app or scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency payload conflict or concurrent sync request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": true,
+                  "message": "Reference already used with different input",
+                  "data": {
+                    "code": "IDEMPOTENCY_CONFLICT",
+                    "trace_id": "trace-demo",
+                    "details": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "description": "Present only for IDEMPOTENCY_IN_PROGRESS."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "413": {
+            "description": "Body exceeds 65536 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "415": {
+            "description": "Only application/json is supported.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "429": {
+            "description": "Admission rate limit; not accepted. Retry-After in seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "description": "Seconds before retry; deadlines still apply."
+              },
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          },
+          "503": {
+            "description": "Admission unavailable; not accepted by this handler. Transport/proxy errors require reconciliation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-Id": {
+                "schema": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "description": "Echo of the request X-Correlation-Id, or a generated value when absent."
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelGroupRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ServiceAccessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth2 client-credentials access token issued by User/Authorization. Validate issuer/audience/expiry and source registration; token endpoint belongs to platform configuration."
+      }
+    },
+    "schemas": {
+      "Context": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AccountContext"
+          },
+          {
+            "$ref": "#/components/schemas/WorkspaceContext"
+          }
+        ]
+      },
+      "AccountContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "context_type": {
+            "const": "ACCOUNT"
+          },
+          "application_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "brand_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          }
+        },
+        "required": [
+          "context_type",
+          "application_id"
+        ]
+      },
+      "WorkspaceContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "context_type": {
+            "const": "WORKSPACE"
+          },
+          "application_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "brand_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "organization_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          }
+        },
+        "required": [
+          "context_type",
+          "application_id",
+          "organization_id"
+        ],
+        "description": "organization_id is the Organization (SHOP, CORPORATION, ...). Required organization type per profile is a runtime check against User."
+      },
+      "AccountRecipient": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ACCOUNT"
+          },
+          "recipient_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "account_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          }
+        },
+        "required": [
+          "kind",
+          "recipient_ref",
+          "account_id"
+        ]
+      },
+      "SmsContact": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CONTACT"
+          },
+          "recipient_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16,
+            "pattern": "^\\+[1-9][0-9]{7,14}$"
+          }
+        },
+        "required": [
+          "kind",
+          "recipient_ref",
+          "phone"
+        ]
+      },
+      "EmailContact": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CONTACT"
+          },
+          "recipient_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "email": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 254,
+            "format": "email"
+          }
+        },
+        "required": [
+          "kind",
+          "recipient_ref",
+          "email"
+        ]
+      },
+      "ShopAudience": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "AUDIENCE"
+          },
+          "recipient_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "audience_code": {
+            "const": "SHOP_ORDER_ALERT_RECEIVERS"
+          }
+        },
+        "required": [
+          "kind",
+          "recipient_ref",
+          "audience_code"
+        ],
+        "description": "Members of the Shop organization in context holding notification.order_alert.receive."
+      },
+      "Recipient": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/AccountRecipient"
+          },
+          {
+            "$ref": "#/components/schemas/SmsContact"
+          },
+          {
+            "$ref": "#/components/schemas/EmailContact"
+          },
+          {
+            "$ref": "#/components/schemas/ConsigneeContact"
+          },
+          {
+            "$ref": "#/components/schemas/ShopAudience"
+          },
+          {
+            "$ref": "#/components/schemas/OpsAudience"
+          }
+        ]
+      },
+      "SendRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "subject_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "description": "Business object the notification is about (Order: order_id). Not a deduplication key; used for listing and operations lookup."
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+          },
+          "type_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ]
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "context": {
+            "$ref": "#/components/schemas/Context"
+          },
+          "recipients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Recipient"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "data": {
+            "type": "object",
+            "maxProperties": 32,
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          "secrets": {
+            "type": "object",
+            "maxProperties": 8,
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            "writeOnly": true
+          },
+          "send_deadline": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancel_group": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          }
+        },
+        "required": [
+          "source_ref",
+          "type",
+          "type_version",
+          "mode",
+          "occurred_at",
+          "context",
+          "recipients",
+          "data",
+          "send_deadline"
+        ],
+        "description": "Common extensible envelope. Server MUST additionally validate the registered (type,type_version) profile; unknown/unavailable type rejected. Per-value UTF-8 limit 2048 bytes and total body 65536 bytes are runtime checks. Source/environment come from authentication/deployment, never payload.",
+        "x-type-profiles": {
+          "user.otp:1": {
+            "$ref": "#/components/schemas/OtpRequest"
+          },
+          "user.invitation:1": {
+            "$ref": "#/components/schemas/InvitationRequest"
+          },
+          "user.account_activation:1": {
+            "$ref": "#/components/schemas/AccountActivationRequest"
+          },
+          "user.password_changed:1": {
+            "$ref": "#/components/schemas/PasswordChangedRequest"
+          },
+          "user.identifier_changed:1": {
+            "$ref": "#/components/schemas/IdentifierChangedRequest"
+          },
+          "user.employee_offboarded:1": {
+            "$ref": "#/components/schemas/EmployeeOffboardedRequest"
+          },
+          "user.device_alert:1": {
+            "$ref": "#/components/schemas/DeviceAlertRequest"
+          },
+          "order.created:1": {
+            "$ref": "#/components/schemas/OrderCreatedRequest"
+          },
+          "order.cancelled:1": {
+            "$ref": "#/components/schemas/OrderCancelledRequest"
+          },
+          "order.pickup_failed:1": {
+            "$ref": "#/components/schemas/OrderPickupFailedRequest"
+          },
+          "order.picked_up:1": {
+            "$ref": "#/components/schemas/OrderPickedUpRequest"
+          },
+          "order.delivery_failed:1": {
+            "$ref": "#/components/schemas/DeliveryFailedRequest"
+          },
+          "order.delivered:1": {
+            "$ref": "#/components/schemas/OrderDeliveredRequest"
+          },
+          "order.partially_delivered:1": {
+            "$ref": "#/components/schemas/OrderPartiallyDeliveredRequest"
+          },
+          "order.return_confirmed:1": {
+            "$ref": "#/components/schemas/OrderReturnConfirmedRequest"
+          },
+          "order.returned:1": {
+            "$ref": "#/components/schemas/OrderReturnedRequest"
+          },
+          "order.sla_breached:1": {
+            "$ref": "#/components/schemas/OrderSlaBreachedRequest"
+          }
+        }
+      },
+      "OtpRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "user.otp"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "sync"
+              },
+              "context": {
+                "$ref": "#/components/schemas/AccountContext"
+              },
+              "recipients": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SmsContact"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EmailContact"
+                    }
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 1
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "challenge_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "REGISTRATION",
+                      "RESET_PASSWORD",
+                      "VERIFY_IDENTIFIER",
+                      "LOGIN",
+                      "MFA_ENROLLMENT",
+                      "CONFIRM_ACTION"
+                    ]
+                  }
+                },
+                "required": [
+                  "challenge_id",
+                  "purpose"
+                ]
+              },
+              "secrets": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "otp": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 12,
+                    "pattern": "^[0-9]{4,12}$"
+                  }
+                },
+                "required": [
+                  "otp"
+                ]
+              },
+              "cancel_group": false
+            },
+            "required": [
+              "secrets",
+              "expires_at"
+            ]
+          }
+        ]
+      },
+      "InvitationRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "user.invitation"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SmsContact"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EmailContact"
+                    }
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 1
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "invitation_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "invitation_kind": {
+                    "type": "string",
+                    "enum": [
+                      "SHOP_MEMBER",
+                      "EMPLOYEE"
+                    ]
+                  },
+                  "workspace_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "inviter_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "invitation_id",
+                  "invitation_kind",
+                  "workspace_name"
+                ],
+                "if": {
+                  "properties": {
+                    "invitation_kind": {
+                      "const": "SHOP_MEMBER"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "inviter_name"
+                  ]
+                }
+              },
+              "secrets": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "invitation_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  }
+                },
+                "required": [
+                  "invitation_url"
+                ]
+              }
+            },
+            "required": [
+              "secrets",
+              "expires_at"
+            ]
+          }
+        ]
+      },
+      "DeviceAlertRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "user.device_alert"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/AccountContext"
+              },
+              "recipients": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AccountRecipient"
+                },
+                "minItems": 1,
+                "maxItems": 1
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "alert_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "device_label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "location_label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "alert_id",
+                  "device_label",
+                  "location_label"
+                ]
+              },
+              "secrets": false
+            },
+            "required": [
+              "expires_at"
+            ]
+          }
+        ]
+      },
+      "DeliveryFailedRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "order.delivery_failed"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 3,
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  }
+                ]
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "order_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "order_status": {
+                    "type": "string",
+                    "pattern": "^SPF-[0-9]{4}$"
+                  },
+                  "status_reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "tracking_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  },
+                  "delivery_failure_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "order_id",
+                  "order_code",
+                  "order_status",
+                  "delivery_failure_id",
+                  "reason_code"
+                ]
+              },
+              "secrets": false
+            },
+            "required": [
+              "cancel_group",
+              "subject_ref"
+            ]
+          }
+        ]
+      },
+      "Delivery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "delivery_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "recipient_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "SMS",
+              "EMAIL",
+              "IN_APP",
+              "PUSH",
+              "ZNS"
+            ]
+          },
+          "requirement": {
+            "type": "string",
+            "enum": [
+              "REQUIRED",
+              "OPTIONAL",
+              "ALTERNATIVE"
+            ]
+          },
+          "requirement_group": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "AVAILABLE",
+              "PROVIDER_ACCEPTED",
+              "DELIVERED",
+              "FAILED",
+              "UNKNOWN",
+              "CANCELLED",
+              "EXPIRED",
+              "SUPPRESSED"
+            ]
+          },
+          "attempt_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Provider attempts started for this delivery."
+          },
+          "next_attempt_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Next scheduled retry; null when no retry is scheduled."
+          },
+          "reason_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "delivery_id",
+          "recipient_ref",
+          "channel",
+          "requirement",
+          "requirement_group",
+          "state",
+          "updated_at",
+          "attempt_count"
+        ]
+      },
+      "Notification": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "notification_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "source_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "subject_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "type_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ]
+          },
+          "admission": {
+            "type": "string",
+            "enum": [
+              "ACCEPTED"
+            ]
+          },
+          "processing_state": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "CLOSED"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACHIEVED",
+              "PARTIAL",
+              "FAILED",
+              "UNKNOWN",
+              "CANCELLED",
+              "EXPIRED",
+              "SUPPRESSED"
+            ]
+          },
+          "sync_result": {
+            "type": "string",
+            "enum": [
+              "PROVIDER_ACCEPTED",
+              "FAILED",
+              "UNKNOWN"
+            ]
+          },
+          "reason_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "config_version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "idempotency_expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deliveries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Delivery"
+            },
+            "minItems": 0,
+            "maxItems": 500
+          }
+        },
+        "required": [
+          "notification_id",
+          "source",
+          "source_ref",
+          "type",
+          "type_version",
+          "mode",
+          "admission",
+          "processing_state",
+          "outcome",
+          "revision",
+          "config_version",
+          "created_at",
+          "updated_at",
+          "idempotency_expires_at",
+          "deliveries"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "mode": {
+                  "const": "sync"
+                }
+              },
+              "required": [
+                "mode"
+              ]
+            },
+            "then": {
+              "required": [
+                "sync_result"
+              ]
+            },
+            "else": {
+              "not": {
+                "required": [
+                  "sync_result"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ErrorDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "field",
+          "code"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Stable machine code; see x-error-codes. Consumers must handle unknown codes by HTTP status."
+          },
+          "trace_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "code",
+          "trace_id",
+          "details"
+        ],
+        "x-error-codes": {
+          "INVALID_REQUEST": 400,
+          "REFERENCE_MISMATCH": 400,
+          "INVALID_CURSOR": 400,
+          "UNAUTHENTICATED": 401,
+          "FORBIDDEN": 403,
+          "NOT_FOUND": 404,
+          "IDEMPOTENCY_CONFLICT": 409,
+          "IDEMPOTENCY_IN_PROGRESS": 409,
+          "REFERENCE_RETIRED": 409,
+          "PAYLOAD_TOO_LARGE": 413,
+          "UNSUPPORTED_MEDIA_TYPE": 415,
+          "UNKNOWN_TYPE": 422,
+          "UNSUPPORTED_TYPE_VERSION": 422,
+          "INVALID_PROFILE": 422,
+          "INVALID_TIME": 422,
+          "STALE_REQUEST": 422,
+          "DEADLINE_EXPIRED": 422,
+          "UNSUPPORTED_PURPOSE": 422,
+          "RATE_LIMITED": 429,
+          "SERVICE_UNAVAILABLE": 503
+        }
+      },
+      "NotificationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "boolean",
+            "const": false
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "data": {
+            "$ref": "#/components/schemas/Notification"
+          }
+        },
+        "required": [
+          "error",
+          "message",
+          "data"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "boolean",
+            "const": true
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "data": {
+            "$ref": "#/components/schemas/ApiError"
+          }
+        },
+        "required": [
+          "error",
+          "message",
+          "data"
+        ]
+      },
+      "CancelRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "reason_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "reason_code"
+        ]
+      },
+      "CancelGroupRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cancel_group": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "context": {
+            "$ref": "#/components/schemas/Context"
+          },
+          "reason_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "cancel_group",
+          "context",
+          "reason_code"
+        ]
+      },
+      "Cancellation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cancellation_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "APPLIED"
+            ]
+          },
+          "matched_requests": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cancelled_deliveries": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "not_recallable_deliveries": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unknown_deliveries": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tombstone_expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "cancellation_id",
+          "state",
+          "matched_requests",
+          "cancelled_deliveries",
+          "not_recallable_deliveries",
+          "unknown_deliveries",
+          "created_at"
+        ]
+      },
+      "CancellationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "boolean",
+            "const": false
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "data": {
+            "$ref": "#/components/schemas/Cancellation"
+          }
+        },
+        "required": [
+          "error",
+          "message",
+          "data"
+        ]
+      },
+      "AccountActivationRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "user.account_activation"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/AccountContext"
+              },
+              "recipients": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EmailContact"
+                },
+                "minItems": 1,
+                "maxItems": 1
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "activation_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "display_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "activation_id"
+                ]
+              },
+              "secrets": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "activation_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  }
+                },
+                "required": [
+                  "activation_url"
+                ]
+              },
+              "cancel_group": false
+            },
+            "required": [
+              "secrets",
+              "expires_at"
+            ]
+          }
+        ]
+      },
+      "PasswordChangedRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "user.password_changed"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/AccountContext"
+              },
+              "recipients": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SmsContact"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EmailContact"
+                    }
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 2
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "changed_via": {
+                    "type": "string",
+                    "enum": [
+                      "CHANGE",
+                      "RESET"
+                    ]
+                  }
+                },
+                "required": [
+                  "changed_via"
+                ]
+              },
+              "secrets": false,
+              "cancel_group": false
+            },
+            "required": []
+          }
+        ]
+      },
+      "IdentifierChangedRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "user.identifier_changed"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/AccountContext"
+              },
+              "recipients": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SmsContact"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EmailContact"
+                    }
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 1
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "identifier_type": {
+                    "type": "string",
+                    "enum": [
+                      "PHONE",
+                      "EMAIL"
+                    ]
+                  },
+                  "masked_new_value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 254
+                  }
+                },
+                "required": [
+                  "identifier_type",
+                  "masked_new_value"
+                ]
+              },
+              "secrets": false,
+              "cancel_group": false
+            },
+            "required": []
+          }
+        ]
+      },
+      "EmployeeOffboardedRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "user.employee_offboarded"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SmsContact"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EmailContact"
+                    }
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 1
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "offboarding_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "organization_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "effective_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "offboarding_id",
+                  "organization_name",
+                  "effective_at"
+                ]
+              },
+              "secrets": false,
+              "cancel_group": false
+            },
+            "required": []
+          }
+        ]
+      },
+      "OpsAudience": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "AUDIENCE"
+          },
+          "recipient_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "audience_code": {
+            "const": "ORDER_OPS_ALERT_RECEIVERS"
+          }
+        },
+        "required": [
+          "kind",
+          "recipient_ref",
+          "audience_code"
+        ],
+        "description": "Internal operations/CS members holding notification.order_ops_alert.receive whose data scope covers the Shop organization in context."
+      },
+      "ConsigneeContact": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CONTACT"
+          },
+          "recipient_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16,
+            "pattern": "^\\+[1-9][0-9]{7,14}$"
+          },
+          "email": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 254,
+            "format": "email"
+          }
+        },
+        "required": [
+          "kind",
+          "recipient_ref",
+          "phone"
+        ],
+        "description": "Order receiver (not a platform account). Supplied by Order on every milestone; used only when the milestone policy messages the receiver."
+      },
+      "OrderCreatedRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "order.created"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  }
+                ],
+                "description": "Consignee contact optional; omit it when the milestone policy does not message the receiver (data minimisation)."
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "order_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "order_status": {
+                    "type": "string",
+                    "pattern": "^SPF-[0-9]{4}$"
+                  },
+                  "status_reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "tracking_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  }
+                },
+                "required": [
+                  "order_id",
+                  "order_code",
+                  "order_status"
+                ]
+              },
+              "secrets": false,
+              "cancel_group": false
+            },
+            "required": [
+              "subject_ref"
+            ]
+          }
+        ]
+      },
+      "OrderCancelledRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "order.cancelled"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  }
+                ],
+                "description": "Consignee contact optional; omit it when the milestone policy does not message the receiver (data minimisation)."
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "order_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "order_status": {
+                    "type": "string",
+                    "pattern": "^SPF-[0-9]{4}$"
+                  },
+                  "status_reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "tracking_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  }
+                },
+                "required": [
+                  "order_id",
+                  "order_code",
+                  "order_status"
+                ]
+              },
+              "secrets": false,
+              "cancel_group": false
+            },
+            "required": [
+              "subject_ref"
+            ]
+          }
+        ]
+      },
+      "OrderPickupFailedRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "order.pickup_failed"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  }
+                ],
+                "description": "Consignee contact optional; omit it when the milestone policy does not message the receiver (data minimisation)."
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "order_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "order_status": {
+                    "type": "string",
+                    "pattern": "^SPF-[0-9]{4}$"
+                  },
+                  "status_reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "tracking_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  },
+                  "pickup_failure_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "order_id",
+                  "order_code",
+                  "order_status",
+                  "pickup_failure_id",
+                  "reason_code"
+                ]
+              },
+              "secrets": false
+            },
+            "required": [
+              "cancel_group",
+              "subject_ref"
+            ]
+          }
+        ]
+      },
+      "OrderPickedUpRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "order.picked_up"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  }
+                ],
+                "description": "Consignee contact optional; omit it when the milestone policy does not message the receiver (data minimisation)."
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "order_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "order_status": {
+                    "type": "string",
+                    "pattern": "^SPF-[0-9]{4}$"
+                  },
+                  "status_reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "tracking_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  }
+                },
+                "required": [
+                  "order_id",
+                  "order_code",
+                  "order_status"
+                ]
+              },
+              "secrets": false,
+              "cancel_group": false
+            },
+            "required": [
+              "subject_ref"
+            ]
+          }
+        ]
+      },
+      "OrderDeliveredRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "order.delivered"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  }
+                ],
+                "description": "Consignee contact optional; omit it when the milestone policy does not message the receiver (data minimisation)."
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "order_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "order_status": {
+                    "type": "string",
+                    "pattern": "^SPF-[0-9]{4}$"
+                  },
+                  "status_reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "tracking_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  }
+                },
+                "required": [
+                  "order_id",
+                  "order_code",
+                  "order_status"
+                ]
+              },
+              "secrets": false,
+              "cancel_group": false
+            },
+            "required": [
+              "subject_ref"
+            ]
+          }
+        ]
+      },
+      "OrderPartiallyDeliveredRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "order.partially_delivered"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  }
+                ],
+                "description": "Consignee contact optional; omit it when the milestone policy does not message the receiver (data minimisation)."
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "order_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "order_status": {
+                    "type": "string",
+                    "pattern": "^SPF-[0-9]{4}$"
+                  },
+                  "status_reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "tracking_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  }
+                },
+                "required": [
+                  "order_id",
+                  "order_code",
+                  "order_status"
+                ]
+              },
+              "secrets": false,
+              "cancel_group": false
+            },
+            "required": [
+              "subject_ref"
+            ]
+          }
+        ]
+      },
+      "OrderReturnConfirmedRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "order.return_confirmed"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  }
+                ],
+                "description": "Consignee contact optional; omit it when the milestone policy does not message the receiver (data minimisation)."
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "order_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "order_status": {
+                    "type": "string",
+                    "pattern": "^SPF-[0-9]{4}$"
+                  },
+                  "status_reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "tracking_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  }
+                },
+                "required": [
+                  "order_id",
+                  "order_code",
+                  "order_status"
+                ]
+              },
+              "secrets": false,
+              "cancel_group": false
+            },
+            "required": [
+              "subject_ref"
+            ]
+          }
+        ]
+      },
+      "OrderReturnedRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "order.returned"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  }
+                ],
+                "description": "Consignee contact optional; omit it when the milestone policy does not message the receiver (data minimisation)."
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "order_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "order_status": {
+                    "type": "string",
+                    "pattern": "^SPF-[0-9]{4}$"
+                  },
+                  "status_reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "tracking_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  }
+                },
+                "required": [
+                  "order_id",
+                  "order_code",
+                  "order_status"
+                ]
+              },
+              "secrets": false,
+              "cancel_group": false
+            },
+            "required": [
+              "subject_ref"
+            ]
+          }
+        ]
+      },
+      "OrderSlaBreachedRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SendRequest"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "order.sla_breached"
+              },
+              "type_version": {
+                "const": 1
+              },
+              "mode": {
+                "const": "async"
+              },
+              "context": {
+                "$ref": "#/components/schemas/WorkspaceContext"
+              },
+              "recipients": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 3,
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ShopAudience"
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/ConsigneeContact"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "$ref": "#/components/schemas/OpsAudience"
+                    },
+                    "minContains": 0,
+                    "maxContains": 1
+                  }
+                ],
+                "description": "Consignee contact optional; omit it when the milestone policy does not message the receiver (data minimisation)."
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "order_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "order_status": {
+                    "type": "string",
+                    "pattern": "^SPF-[0-9]{4}$"
+                  },
+                  "status_reason_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "tracking_url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048,
+                    "format": "uri",
+                    "pattern": "^https://"
+                  },
+                  "sla_breach_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "sla_code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "expected_to": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "order_id",
+                  "order_code",
+                  "order_status",
+                  "sla_breach_id",
+                  "sla_code",
+                  "expected_to"
+                ]
+              },
+              "secrets": false
+            },
+            "required": [
+              "cancel_group",
+              "subject_ref"
+            ]
+          }
+        ]
+      },
+      "NotificationPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            },
+            "maxItems": 50
+          },
+          "meta": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 50
+              },
+              "has_next": {
+                "type": "boolean"
+              },
+              "next_cursor": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 512
+              }
+            },
+            "required": [
+              "page_size",
+              "has_next",
+              "next_cursor"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "meta"
+        ]
+      },
+      "NotificationPageResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "boolean",
+            "const": false
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "data": {
+            "$ref": "#/components/schemas/NotificationPage"
+          }
+        },
+        "required": [
+          "error",
+          "message",
+          "data"
+        ]
+      }
+    }
+  }
+}

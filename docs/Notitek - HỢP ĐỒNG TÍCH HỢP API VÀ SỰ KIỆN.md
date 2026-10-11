@@ -1,6 +1,8 @@
 # Notitek - HỢP ĐỒNG TÍCH HỢP API VÀ SỰ KIỆN
 
-**Phiên bản:** 0.2. **Ngày:** 08/10/2026. **Trạng thái:** Bản nháp ngữ nghĩa để Tech Lead các bên hoàn thiện.
+**Phiên bản:** 0.3. **Ngày:** 11/10/2026. Bản 0.3: đồng bộ quyết định A1–A8, B1 (DEC bản 1.4, mục 2.13): R1 chỉ có đường REST, broker để sau; 17 profile R1; Order gửi liên hệ người nhận; audience vận hành; User cấp lại link. **Trạng thái:** Bản nháp ngữ nghĩa để Tech Lead các bên hoàn thiện.
+
+**Bổ sung 11/10/2026:** Đã có [thiết kế API chung v1](api/README.md), [OpenAPI](api/openapi.json) và ví dụ cho 17 profile R1: 7 profile User (OTP qua SMS/Email, lời mời thành viên/nhân viên qua Email/SMS, kích hoạt tài khoản, đổi mật khẩu, đổi định danh, nghỉ việc, cảnh báo thiết bị) và 10 mốc Order. Endpoint chung là `/v1/notifications` (DEC-02). Quyết định ngày 11/10/2026: R1 mọi nguồn gọi REST, thông báo async đi từ dispatcher outbox của nguồn, broker để phân kỳ sau; xác thực OAuth2 client credentials; trường JSON snake_case, header `X-Correlation-Id`; context `organization_id` + `application_id`. Artifact mới cụ thể hóa phần gửi/tra cứu/hủy; hộp tin, Push, callback provider và API cấp lại link của User vẫn cần hợp đồng riêng. Thiết kế mới chưa đồng nghĩa dịch vụ đã triển khai hoặc các bên đã nghiệm thu.
 
 Hợp đồng xác định nguồn cung cấp gì và Notification trả gì cho các lát cắt User/Order. Các tên trường dưới đây là mô hình dữ liệu để thống nhất ý nghĩa, chưa là tên API/event đã duyệt. OpenAPI/schema event và bộ ví dụ phải được chốt trước khi các bên tích hợp.
 
@@ -9,7 +11,7 @@ Hợp đồng xác định nguồn cung cấp gì và Notification trả gì cho
 | Thao tác | Bên gọi | Ý nghĩa |
 |---|---|---|
 | Yêu cầu gửi có phản hồi | User hoặc nguồn có nhu cầu tương tự | Gửi theo reference và trả mức kết quả phù hợp; OTP không coi accepted là gửi thật. |
-| Nhận sự việc nguồn | Order hoặc nguồn tích hợp | Nhận sự việc đã commit và chọn luồng/trường hợp gửi theo cấu hình. |
+| Nhận sự việc nguồn | Order hoặc nguồn tích hợp | Nhận sự việc đã commit và chọn luồng/trường hợp gửi theo cấu hình. R1: dispatcher outbox của nguồn gọi REST; nhận qua broker để phân kỳ sau. |
 | Tra cứu theo reference | Nguồn hoặc vận hành có quyền | Lấy kết quả ở mức yêu cầu/bản/kênh, gồm phần chưa rõ. |
 | Hủy bản chờ | Nguồn/người có quyền trong phạm vi | Dừng phần chưa đưa ra ngoài theo reference/nhóm liên quan; trả phần đã gửi và phần đã dừng. |
 | Nhận phản hồi kênh | Nhà cung cấp qua cơ chế được xác thực | Cập nhật kết quả đúng lần thử/bản tin, không tạo lần gửi mới từ callback. |
@@ -70,17 +72,17 @@ Mỗi kết quả cần reference nguồn, định danh Notification, mức kế
 
 | Nguồn | Căn cứ hiện có | Điều cần hoàn thiện |
 |---|---|---|
-| User gửi mã/link | NotificationPort nhận Notification và trả NotificationReceipt | Ánh xạ reference, đích, template, parameters, expiresAt; bảo vệ bí mật; bổ sung ngữ cảnh đáng tin cậy khi cần; biểu diễn lỗi/chưa rõ và mức kết quả đủ cho User. |
+| User gửi mã/link và thông báo tài khoản | NotificationPort nhận Notification và trả NotificationReceipt | Adapter ánh xạ 7 template hiện có sang profile `user.*` (OTP, lời mời, kích hoạt, đổi mật khẩu, đổi định danh, nghỉ việc); `source_ref` ổn định qua các lần thử; link kích hoạt là URL HTTPS do User dựng; thông báo async đi qua outbox của User thay cho gửi best-effort sau commit; biểu diễn `UNKNOWN` của OTP. User cung cấp API cấp lại link lời mời/kích hoạt cho Notitek (CF-10). |
 | User cảnh báo thiết bị | Chuông Shop có giao diện và hành động device trust gọi User | Định nghĩa event cảnh báo và khóa đối chiếu chống trùng; giữ trạng thái nghiệp vụ và hành động ở User; tách trạng thái đọc. |
-| Order | Có các event ghi outbox; sự việc delivery.* chưa là hợp đồng được xác nhận | Định nghĩa đầu vào giao thất bại, người nhận và chỉ dẫn hủy; xây/kiểm chứng đường phát bền vững; thống nhất lỗi/tương thích. |
-| User/Authorization | Application/Client, membership, Access Context và cơ chế quyền chung | Hành động/scope Notification, căn cứ xử lý nền và tách ngữ cảnh tài khoản/công việc. |
+| Order | Có bảng outbox nhưng chưa có dispatcher; webhook tracking chưa ghi outbox | Ghi outbox cho đủ 10 mốc, kèm `occurred_at` nghiệp vụ và liên hệ người nhận hàng (Notitek không gọi ngược Order); dispatcher gọi REST theo profile `order.*`; gọi hủy theo `cancel_group` khi lần lấy/giao thất bại hoặc vi phạm SLA được giải quyết; phát hiện vi phạm SLA (CF-04). Tài liệu Order §11 (`/v1/notifications/events/orders`) phải sửa theo hợp đồng này. |
+| User/Authorization | Application/Client, membership, Access Context và cơ chế quyền chung; service nội bộ hiện dùng `X-Service-Token` tĩnh | Cấp OAuth2 client credentials cho service (CF-09); đăng ký 9 quyền gồm `notification.order_alert.receive` và `notification.order_ops_alert.receive` (CF-07); API resolve người nhận theo quyền và data scope cho Shop và vận hành. |
 | App/năng lực thiết bị | Bên sở hữu đích Push cần xác định | Client cụ thể, đăng ký/tra/thu hồi đích, đổi chủ thiết bị và xử lý token lỗi. |
 
 `NotificationReceipt.providerReference` hiện không tự biểu diễn đầy đủ bảng kết quả. Adapter mới phải chuyển ngữ nghĩa đã chốt vào cách gọi User sử dụng; không coi một chuỗi reference bất kỳ là bằng chứng gửi thành công.
 
 ## 6 Artifact hợp đồng cần bàn giao
 
-Tech Lead tạo OpenAPI cho các thao tác HTTP được chọn; schema event cho các luồng bất đồng bộ; bộ ví dụ có dữ liệu giả và không chứa bí mật thật; quy tắc tương thích/version; cơ chế xác thực nguồn/callback; giới hạn kích thước, lỗi và timeout. Mỗi consumer/provider có kiểm thử hợp đồng. Tên event delivery.* và route chưa chốt không được đưa vào code như hợp đồng đang hoạt động.
+OpenAPI R1 đã có tại [api/openapi.json](api/openapi.json); Tech Lead User/Order review và ký (CF-03). Schema event CloudEvents chỉ cần khi bắt đầu phân kỳ broker. Còn phải bàn giao: bộ ví dụ có dữ liệu giả và không chứa bí mật thật; quy tắc tương thích/version; cơ chế xác thực nguồn/callback; giới hạn kích thước, lỗi và timeout. Mỗi consumer/provider có kiểm thử hợp đồng. Route/profile chưa có trong OpenAPI không được đưa vào code như hợp đồng đang hoạt động.
 
 ## 7 Các quyết định liên quan
 

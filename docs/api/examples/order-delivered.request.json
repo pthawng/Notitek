@@ -1,0 +1,27 @@
+{
+  "source_ref": "order-demo:order.delivered",
+  "subject_ref": "order-demo",
+  "type": "order.delivered",
+  "type_version": 1,
+  "mode": "async",
+  "occurred_at": "2026-10-11T10:00:00+07:00",
+  "context": {
+    "context_type": "WORKSPACE",
+    "application_id": "app-shop-web",
+    "organization_id": "org-shop-demo"
+  },
+  "recipients": [
+    {
+      "kind": "AUDIENCE",
+      "recipient_ref": "shop-team",
+      "audience_code": "SHOP_ORDER_ALERT_RECEIVERS"
+    }
+  ],
+  "data": {
+    "order_id": "order-demo",
+    "order_code": "12345678901231",
+    "order_status": "SPF-0901",
+    "tracking_url": "https://tracking.example.invalid/orders/12345678901231"
+  },
+  "send_deadline": "2026-10-11T22:00:00+07:00"
+}

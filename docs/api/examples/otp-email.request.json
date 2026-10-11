@@ -1,0 +1,27 @@
+{
+  "source_ref": "user.otp-002",
+  "type": "user.otp",
+  "type_version": 1,
+  "mode": "sync",
+  "occurred_at": "2026-10-11T10:00:00+07:00",
+  "context": {
+    "context_type": "ACCOUNT",
+    "application_id": "app-shop-web"
+  },
+  "recipients": [
+    {
+      "kind": "CONTACT",
+      "recipient_ref": "otp-recipient",
+      "email": "user@example.invalid"
+    }
+  ],
+  "data": {
+    "challenge_id": "challenge-demo-2",
+    "purpose": "VERIFY_IDENTIFIER"
+  },
+  "send_deadline": "2026-10-11T10:00:05+07:00",
+  "expires_at": "2026-10-11T10:05:00+07:00",
+  "secrets": {
+    "otp": "123456"
+  }
+}

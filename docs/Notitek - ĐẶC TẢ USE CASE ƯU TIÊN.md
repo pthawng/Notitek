@@ -1,6 +1,8 @@
 # Notitek - ĐẶC TẢ USE CASE ƯU TIÊN
 
-**Phiên bản:** 0.2. **Ngày:** 08/10/2026. **Chủ trì:** BA cùng PO Notification và PO module nguồn.
+**Phiên bản:** 0.4. **Ngày:** 11/10/2026. Bản 0.4: lời mời đi qua outbox của User rồi gọi API, thay cho gửi sau commit kiểu best-effort; mã UC cho 5 mốc Order mới (UC-ORD-12 đến 16) theo danh mục use case. Bản 0.3: đồng bộ quyết định PO 11/10/2026 (đích OTP/lời mời, cấp lại link, 10 mốc Order, liên hệ người nhận do Order cấp). **Chủ trì:** BA cùng PO Notification và PO module nguồn.
+
+**Phạm vi bổ sung chưa phân rã:** R1 còn gồm 4 thông báo tài khoản User (UC-USR-02/05/06/07) và 9 mốc Order ngoài giao thất bại (UC-ORD-01/03/06/09/12/13/14/15/16). Các mốc Order dùng cùng mẫu phân rã với mục 5; BA bổ sung đặc tả riêng nếu một mốc có ngoại lệ khác.
 
 Các use case ưu tiên của đợt đầu dưới đây phân rã [phạm vi đã xác nhận](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>) thành actor, điều kiện, luồng chính, ngoại lệ và hậu điều kiện. Đây là đặc tả nghiệp vụ cho đợt đầu; schema, route và công nghệ thuộc [hợp đồng](<Notitek - HỢP ĐỒNG TÍCH HỢP API VÀ SỰ KIỆN.md>) và [thiết kế kỹ thuật](<Notitek - THIẾT KẾ KỸ THUẬT SƠ BỘ.md>).
 
@@ -23,7 +25,7 @@ Các use case ưu tiên của đợt đầu dưới đây phân rã [phạm vi �
 
 1. User cấp yêu cầu gửi cùng chỉ dẫn thời hạn và khả năng thử lại theo hợp đồng.
 2. Notification kiểm tra hợp đồng, chống trùng và điều kiện gửi được giao.
-3. Notification dựng nội dung từ mẫu phù hợp, gửi SMS theo lát cắt đầu và ghi kết quả ở mức được kênh xác nhận.
+3. Notification dựng nội dung từ mẫu phù hợp theo mục đích mã, gửi SMS hoặc Email theo đích User cấp và ghi kết quả ở mức được kênh xác nhận.
 4. Notification trả kết quả/định danh tra cứu theo hợp đồng. User quyết định kích hoạt mã, tiếp tục xác thực hoặc hiển thị phương án tiếp theo.
 5. Người dùng nhập mã tại User; Notification không xác minh mã.
 
@@ -37,16 +39,16 @@ Các use case ưu tiên của đợt đầu dưới đây phân rã [phạm vi �
 
 **Mã:** UC-USR-03. **Actor chính:** User; người mời và người được mời tham gia trải nghiệm.
 
-**Kích hoạt:** Lời mời đã được User lưu thành công. **Tiền điều kiện:** Có email/link/thời hạn và dữ liệu tổ chức được nguồn xác nhận; mẫu đã duyệt; nguồn gọi gửi sau commit.
+**Kích hoạt:** Lời mời đã được User lưu thành công. **Tiền điều kiện:** Có email hoặc số điện thoại/link/thời hạn và dữ liệu tổ chức được nguồn xác nhận; mẫu đã duyệt; User ghi yêu cầu gửi vào outbox cùng transaction lưu lời mời, dispatcher của User gọi API với reference ổn định.
 
 **Luồng chính:**
 
-1. User cung cấp yêu cầu gửi lời mời đã commit.
-2. Notification chống trùng, kiểm tra điều kiện gửi và dựng mẫu Email.
+1. Dispatcher outbox của User gửi yêu cầu lời mời đã commit (gửi lại nguyên yêu cầu với cùng reference nếu mất phản hồi).
+2. Notification chống trùng, kiểm tra điều kiện gửi và dựng mẫu Email (hoặc SMS khi User cấp số điện thoại).
 3. Email cho biết tổ chức mời, mục đích và link do User cấp; không thêm quyền hoặc thay đổi lời mời.
 4. Kết quả được ghi và cung cấp cho bên được phép. Người được mời mở link để xử lý tại User.
 
-**Ngoại lệ:** Gửi lỗi không xóa lời mời. Cấp lại/thu hồi/đã dùng link do User quyết định; Notification dừng bản chờ theo reference/chỉ dẫn hoặc hạn gửi. Email bị trả lại được ghi nhận và vận hành tra cứu theo quyền. Kết quả gửi không chứng minh người được mời đã chấp nhận.
+**Ngoại lệ:** Gửi lỗi không xóa lời mời. Cấp lại/thu hồi/đã dùng link do User quyết định; khi cần gửi lại sau thời hạn Notification được giữ link, Notification xin link mới từ User và dừng nếu User báo lời mời không còn hiệu lực; Notification dừng bản chờ theo reference/chỉ dẫn hoặc hạn gửi. Email bị trả lại được ghi nhận và vận hành tra cứu theo quyền. Kết quả gửi không chứng minh người được mời đã chấp nhận.
 
 **Hậu điều kiện:** Lời mời vẫn do User quản lý; tin gửi có mẫu, phiên bản và kết quả rõ.
 
@@ -66,11 +68,11 @@ Các use case ưu tiên của đợt đầu dưới đây phân rã [phạm vi �
 
 **Mã:** UC-ORD-05. **Actor chính:** Order; người hưởng lợi là Shop và người nhận hàng.
 
-**Kích hoạt:** Order xác nhận một sự việc giao thất bại cần thông báo. **Tiền điều kiện:** Order cấp định danh sự việc, dữ liệu dựng mẫu, chặng/lần thực hiện khi cần, liên hệ giao dịch và người nhận Shop/căn cứ đã duyệt. Tên event và đường phát phải được chốt trong hợp đồng.
+**Kích hoạt:** Order xác nhận một sự việc giao thất bại cần thông báo. **Tiền điều kiện:** Order cấp định danh sự việc, dữ liệu dựng mẫu, chặng/lần thực hiện khi cần, liên hệ giao dịch và người nhận Shop/căn cứ đã duyệt. Order cấp liên hệ người nhận hàng cùng sự việc; Notification không tra ngược sang Order. Đường gửi R1 đã chốt: Order ghi sự việc vào outbox và gửi qua API chung của Notification.
 
 **Luồng chính:**
 
-1. Order phát sự việc chuẩn hoặc yêu cầu gửi đã xác nhận; Notification không lấy webhook NVC thô để tự kết luận.
+1. Order gửi sự việc đã xác nhận (một trong 10 mốc của hợp đồng Order); Notification không lấy webhook NVC thô để tự kết luận.
 2. Notification chọn luồng và các trường hợp gửi theo cấu hình hiệu lực.
 3. Trường hợp Shop tạo In-app và Push cho tài khoản đúng Shop/app; nội dung dẫn tới đơn tại Order.
 4. Trường hợp người nhận hàng gửi ZNS theo liên hệ trên đơn; SMS dự phòng chỉ chạy khi có điều kiện được duyệt.

@@ -1,0 +1,27 @@
+{
+  "source_ref": "user.account_activation-001",
+  "type": "user.account_activation",
+  "type_version": 1,
+  "mode": "async",
+  "occurred_at": "2026-10-11T10:00:00+07:00",
+  "context": {
+    "context_type": "ACCOUNT",
+    "application_id": "app-internal-web"
+  },
+  "recipients": [
+    {
+      "kind": "CONTACT",
+      "recipient_ref": "activation-recipient",
+      "email": "staff@example.invalid"
+    }
+  ],
+  "data": {
+    "activation_id": "activation-demo",
+    "display_name": "Demo"
+  },
+  "send_deadline": "2026-10-12T10:00:00+07:00",
+  "expires_at": "2026-10-12T10:00:00+07:00",
+  "secrets": {
+    "activation_url": "https://internal.example.invalid/activate?token=demo-only"
+  }
+}

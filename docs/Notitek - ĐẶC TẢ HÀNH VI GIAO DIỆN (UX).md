@@ -1,6 +1,6 @@
 # Notitek - ĐẶC TẢ HÀNH VI GIAO DIỆN (UX)
 
-**Phiên bản:** 0.2. **Ngày:** 08/10/2026. **Trạng thái:** Đặc tả hành vi để PO, UX và frontend hoàn thiện.
+**Phiên bản:** 0.4. **Ngày:** 11/10/2026. Bản 0.4: UX-01 áp dụng cho cả vận hành/CSKH trên giao diện nội bộ (hiển thị theo quyền và data scope), nguồn dữ liệu theo [bản nháp hộp tin](api/inbox-and-push.md); UX-04 tra theo `subject_ref`. Bản 0.3: hộp tin Shop nhận đủ 10 mốc đơn hàng của R1; vận hành/CSKH nhận thông báo đơn trên giao diện nội bộ khi Order chỉ định. **Trạng thái:** Đặc tả hành vi để PO, UX và frontend hoàn thiện.
 
 Trải nghiệm đợt đầu tiếp nối chuông thông báo Shop, phân biệt cảnh báo tài khoản và thông báo công việc, đồng thời cung cấp tra cứu cho vận hành. Các hành động nghiệp vụ tiếp tục do User/Order xử lý. Wireframe và hợp đồng dữ liệu cần hoàn thiện trước triển khai UI.
 
@@ -14,10 +14,10 @@ Backend kiểm tra quyền và ngữ cảnh. Giao diện dùng ngữ cảnh đ�
 
 | Mã | Màn hình/thành phần | Actor | Hành vi và nguồn dữ liệu | Story |
 |---|---|---|---|---|
-| UX-01 | Chuông và danh sách thông báo | Người dùng Shop | Hiển thị số chưa đọc và danh sách đúng ngữ cảnh; tiếp nối thành phần hiện có; nguồn Notification và cảnh báo User theo hợp đồng event | ST-05/08 |
+| UX-01 | Chuông và danh sách thông báo | Người dùng Shop; vận hành/CSKH trên giao diện nội bộ | Hiển thị số chưa đọc và danh sách đúng ngữ cảnh; tiếp nối chuông hiện có ở business-web và internal-fe, thay cơ chế poll yêu cầu thiết bị và trạng thái đọc lưu ở trình duyệt. Nguồn dữ liệu là [API hộp tin](api/inbox-and-push.md), gồm cảnh báo thiết bị của User. Với vận hành/CSKH, tin đơn hàng đến qua người nhận vận hành và hiển thị theo quyền nhận và data scope bao phủ Shop của đơn, không lọc theo tổ chức đang đăng nhập | ST-05/08/15 |
 | UX-02 | Chi tiết thông báo công việc | Người dùng có quyền trong Shop | Sự việc, đối tượng, nội dung và hành động mở đơn; đọc tách với hành động; Order kiểm tra quyền khi mở | ST-05 |
 | UX-03 | Chi tiết cảnh báo/yêu cầu thiết bị | Chủ tài khoản | Hiển thị trạng thái, khả năng thao tác do User cấp; xác nhận/báo không nhận ra gọi User; cập nhật kết quả từ nguồn | ST-08 |
-| UX-04 | Tra cứu yêu cầu và kết quả gửi | Vận hành có quyền | Tìm theo reference; xem các trường hợp gửi, bản/kênh/lần thử và lý do; nội dung che theo quyền | ST-09 |
+| UX-04 | Tra cứu yêu cầu và kết quả gửi | Vận hành có quyền | Tìm theo reference hoặc đối tượng nghiệp vụ (`subject_ref`, ví dụ đơn) theo [bản nháp tra cứu](api/provider-webhooks-and-ops.md); xem các trường hợp gửi, bản/kênh/lần thử và lý do; nội dung che theo quyền | ST-09 |
 | UX-05 | Cấu hình tối thiểu của luồng | Vận hành/quản trị được cấp quyền | Xem luồng, mẫu, phạm vi, kênh, phiên bản và lỗi trước kích hoạt; phương thức vận hành có thể chưa là màn hình riêng | ST-01 |
 
 UX-05 không tự yêu cầu xây trình thiết kế workflow hoặc trang quản trị đầy đủ ở đợt đầu. Nếu dùng cấu hình do vận hành quản lý, vẫn phải có quyền, phiên bản, kiểm tra và audit theo hợp đồng.
@@ -40,7 +40,7 @@ Trạng thái đọc của In-app mới lấy backend làm nguồn sự thật t
 
 Thông báo nói rõ sự việc, đối tượng người dùng nhận biết và bước tiếp theo khi cần. Nội dung Push/preview không lộ bí mật hoặc dữ liệu nhạy cảm ngoài chính sách. Link do nguồn cung cấp và được kiểm tra hợp lệ; Notification không ghép link để bỏ qua quyền của nguồn.
 
-Email lời mời dẫn tới chức năng User. Thông báo giao thất bại dẫn tới đơn hoặc hướng liên hệ do Order/chủ nội dung cấp. Cảnh báo thiết bị tiếp tục dùng hành động User; nút cho phép đăng nhập hoặc báo không nhận ra không trở thành API nghiệp vụ của Notification.
+Email lời mời dẫn tới chức năng User. Thông báo giao thất bại và các mốc đơn hàng khác (tạo, hủy, lấy hàng, giao, hoàn, quá hạn SLA) dẫn tới đơn hoặc hướng liên hệ do Order/chủ nội dung cấp. Cảnh báo thiết bị tiếp tục dùng hành động User; nút cho phép đăng nhập hoặc báo không nhận ra không trở thành API nghiệp vụ của Notification.
 
 ## 5 Tiếp nối thành phần hiện có
 
