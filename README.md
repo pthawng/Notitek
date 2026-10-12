@@ -64,6 +64,15 @@ make check             # lint + test + contract
 
 Toàn bộ qua biến môi trường tiền tố `NOTITEK_`, xem [`.env.example`](.env.example). Cấu hình sai hoặc thiếu làm runtime dừng ngay khi khởi động và liệt kê mọi lỗi cùng lúc. Mỗi runtime chỉ yêu cầu hạ tầng nó dùng. Secret không bao giờ nằm trong repo.
 
+Kiểm tra khi khởi động, không cần kết nối mạng:
+
+- Kiểu và khoảng giá trị (số, thời lượng, giá trị cho phép), địa chỉ `host:port`, DSN Postgres, URL RabbitMQ, số kết nối tối thiểu không vượt tối đa, cổng admin khác cổng công khai.
+- Riêng `NOTITEK_ENV=production`: Postgres phải dùng TLS (`sslmode=require`, `verify-ca` hoặc `verify-full`), RabbitMQ phải dùng `amqps://`, Redis phải có mật khẩu. Các môi trường khác không bị ép, để local và CI chạy không cần chứng chỉ.
+- Thông báo lỗi không bao giờ chứa DSN, URL hay mật khẩu. Cấu hình in ra log khi khởi động (`configuration loaded`) và qua `%v`, `%+v`, `%#v` đều đã che mật khẩu.
+- Test giữ `.env.example` luôn khởi động được cả bốn runtime.
+
+Nguồn sự thật của loại thông báo (`config/registry`) là phần khác, chưa có bộ nạp và kiểm tra.
+
 ## Trạng thái
 
 Khung dự án (M0): composition root, vòng đời và tắt mềm, cấu hình, log có che dữ liệu, envelope lỗi theo danh mục `x-error-codes`, probe, PostgreSQL `TxManager`, RabbitMQ publisher có confirms, Redis, quy tắc tổng hợp outcome và phân loại kết quả kênh.

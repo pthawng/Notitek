@@ -8,6 +8,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -39,6 +40,13 @@ func (e *Env) Err() error {
 
 func (e *Env) fail(key, format string, args ...any) {
 	e.errs = append(e.errs, fmt.Errorf("%s: %s", key, fmt.Sprintf(format, args...)))
+}
+
+// Fail records a problem the caller found while validating key, such as a
+// cross-field rule or a value that only a client library can check. Do not
+// put the value in format when it may be a secret.
+func (e *Env) Fail(key, format string, args ...any) {
+	e.fail(key, format, args...)
 }
 
 func (e *Env) raw(key string) (string, bool) {
@@ -116,4 +124,29 @@ func (e *Env) Duration(key string, def time.Duration) time.Duration {
 		return def
 	}
 	return d
+}
+
+// ValidateAddr reports whether addr is a "host:port" or ":port" address with a
+// port in 1-65535.
+func ValidateAddr(addr string) error {
+	_, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return fmt.Errorf("must be host:port or :port, got %q", addr)
+	}
+	n, err := strconv.Atoi(port)
+	if err != nil || n < 1 || n > 65535 {
+		return fmt.Errorf("port must be between 1 and 65535, got %q", port)
+	}
+	return nil
+}
+
+// Addr returns the "host:port" value of key, or def. A malformed address is
+// recorded as an error.
+func (e *Env) Addr(key, def string) string {
+	v := e.String(key, def)
+	if err := ValidateAddr(v); err != nil {
+		e.fail(key, "%v", err)
+		return def
+	}
+	return v
 }
