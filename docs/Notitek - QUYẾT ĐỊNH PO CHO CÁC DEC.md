@@ -1,6 +1,6 @@
 # Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC
 
-**Phiên bản:** 1.6. **Ngày:** 11/10/2026. Bản 1.6: áp dụng kết quả review (mục 2.15): `source` mặc định theo token, ràng buộc OTP theo `received_at`, `source_ref` Order phân biệt từng lần thất bại, `attempt_count`/`next_attempt_at`, liên hệ người nhận chỉ bắt buộc ở giao thất bại, cấp lại link không vô hiệu link cũ, quy ước scope OAuth, chốt kênh 10 mốc Order, mã UC-ORD-12..16, hộp tin cho vận hành. Bản 1.5: chốt hướng xử lý B2–B11, C1–C7 và D (mục 2.14): `subject_ref` và liệt kê theo đối tượng, xử lý OTP `UNKNOWN`, reference tất định của User, ánh xạ `delivery_status`, R1 chỉ tiếng Việt và không có OTP Zalo, thêm CF-11 (API resolve người nhận) và CF-12 (chọn nhà cung cấp), kéo CF-07 về 15/10. Bản 1.4: chốt A1–A8 và B1 (mục 2.13): R1 nguồn gọi REST từ dispatcher outbox, broker để sau; Order gửi liên hệ người nhận, Notification không gọi ngược Order; OAuth2 client credentials; snake_case và `X-Correlation-Id`; context `organization_id` + `application_id`; R1 gồm 4 thông báo tài khoản User và 10 mốc Order; thêm audience/quyền vận hành; User cung cấp API cấp lại link. Bản 1.3: giới hạn tần suất nghiệp vụ (OTP, tin theo đơn) thuộc module nguồn; Notification chỉ giữ giới hạn bảo vệ hệ thống/provider; OTP nhận đích SMS hoặc Email kèm `purpose`, lời mời nhận Email hoặc SMS và có lời mời nhân viên, thêm bốn profile User (kích hoạt tài khoản, đổi mật khẩu, đổi định danh, nghỉ việc). Bản 1.2: người yêu cầu chốt endpoint chung `/v1/notifications`, thay prefix internal trong DEC-02. Bản 1.1: hủy DEC-11 (không có hệ thống cũ), chốt ADR-01 tự xây, loại ADR-07. **Chủ trì:** PO Notification.
+**Phiên bản:** 1.8. **Ngày:** 12/10/2026. Bản 1.8: chốt cách xử lý bounce sau `PROVIDER_ACCEPTED` và nghĩa của `outcome` khi chưa đóng xử lý (mục 2.10, 2.15 S6 đến S8). Bản 1.7: DEC-07/DEC-08 chuyển kết nối kênh (sender, OA, domain, credential), hạn mức ngày, bật/tắt Push của Shop và kill-switch sang DB và API để vận hành đổi được trên production mà không cần deploy; chính sách, mẫu, tiêu chí đạt giữ ở YAML. Bản 1.6: áp dụng kết quả review (mục 2.15): `source` mặc định theo token, ràng buộc OTP theo `received_at`, `source_ref` Order phân biệt từng lần thất bại, `attempt_count`/`next_attempt_at`, liên hệ người nhận chỉ bắt buộc ở giao thất bại, cấp lại link không vô hiệu link cũ, quy ước scope OAuth, chốt kênh 10 mốc Order, mã UC-ORD-12..16, hộp tin cho vận hành. Bản 1.5: chốt hướng xử lý B2–B11, C1–C7 và D (mục 2.14): `subject_ref` và liệt kê theo đối tượng, xử lý OTP `UNKNOWN`, reference tất định của User, ánh xạ `delivery_status`, R1 chỉ tiếng Việt và không có OTP Zalo, thêm CF-11 (API resolve người nhận) và CF-12 (chọn nhà cung cấp), kéo CF-07 về 15/10. Bản 1.4: chốt A1–A8 và B1 (mục 2.13): R1 nguồn gọi REST từ dispatcher outbox, broker để sau; Order gửi liên hệ người nhận, Notification không gọi ngược Order; OAuth2 client credentials; snake_case và `X-Correlation-Id`; context `organization_id` + `application_id`; R1 gồm 4 thông báo tài khoản User và 10 mốc Order; thêm audience/quyền vận hành; User cung cấp API cấp lại link. Bản 1.3: giới hạn tần suất nghiệp vụ (OTP, tin theo đơn) thuộc module nguồn; Notification chỉ giữ giới hạn bảo vệ hệ thống/provider; OTP nhận đích SMS hoặc Email kèm `purpose`, lời mời nhận Email hoặc SMS và có lời mời nhân viên, thêm bốn profile User (kích hoạt tài khoản, đổi mật khẩu, đổi định danh, nghỉ việc). Bản 1.2: người yêu cầu chốt endpoint chung `/v1/notifications`, thay prefix internal trong DEC-02. Bản 1.1: hủy DEC-11 (không có hệ thống cũ), chốt ADR-01 tự xây, loại ADR-07. **Chủ trì:** PO Notification.
 **Trạng thái:** PO đã chốt 12 DEC của đợt đầu cùng giá trị khởi điểm cho SRS-P01 đến SRS-P12. Các điểm ghi "Chờ xác nhận" ở mục 4 cần bên sở hữu ký trước khi nghiệm thu phần liên quan; đội được dùng giá trị trong tài liệu này để code, cấu hình và kiểm thử.
 
 Tài liệu này trả lời các câu hỏi tại mục 11 [BRD](<Notitek - ĐẶC TẢ YÊU CẦU NGHIỆP VỤ (BRD).md>), mục 4 [phạm vi phát hành](<Notitek - PHẠM VI VÀ KẾ HOẠCH PHÁT HÀNH ĐẦU TIÊN.md>) và mục 11 [SRS](<Notitek - ĐẶC TẢ YÊU CẦU PHẦN MỀM (SRS).md>). Quyết định được chốt bởi người được người yêu cầu giao vai trò PO; không thay chữ ký của Tech Lead, pháp chế, tài chính hoặc vận hành ở các điểm thuộc thẩm quyền của họ.
@@ -17,8 +17,8 @@ Nguyên tắc chốt: chọn phương án đơn giản nhất đủ cho phạm v
 | DEC-04 | Ba mục đích SECURITY, TRANSACTIONAL, MARKETING; R1 từ chối MARKETING; có danh sách chặn toàn cục | Pháp chế/DPO |
 | DEC-05 | OTP đồng bộ ≤ 5s, ba kết quả `PROVIDER_ACCEPTED`/`FAILED`/`UNKNOWN`; không retry nền | Tech Lead User |
 | DEC-06 | Bảng hạn gửi/retry/khung giờ theo luồng; mục tiêu p95 và tải thiết kế | Vận hành (số liệu tải thật) |
-| DEC-07 | Ba cấp Global → App/Brand → Shop; cấu hình lưu dạng file trong repo; ghim version, kill-switch có hiệu lực ngay | — |
-| DEC-08 | Chủ ngân sách là brand/đơn vị kinh doanh; Notification áp hạn mức cứng theo ngày, không tự giữ sổ | Tài chính, chủ brand |
+| DEC-07 | Ba cấp Global → App/Brand → Shop; chính sách (loại thông báo, mẫu, tiêu chí đạt) ở file YAML trong repo, dữ liệu vận hành (kết nối kênh, kill-switch, bật/tắt Push của Shop) ở DB và API; ghim version YAML, kill-switch có hiệu lực ngay | — |
+| DEC-08 | Chủ ngân sách là brand/đơn vị kinh doanh; Notification áp hạn mức cứng theo ngày (đặt qua API, lưu DB), không tự giữ sổ | Tài chính, chủ brand |
 | DEC-09 | Bảng thời gian lưu từng loại dữ liệu; OTP không lưu ra đĩa; xem dữ liệu gốc cần quyền riêng | Pháp chế/DPO |
 | DEC-10 | Bằng chứng và tiêu chí đạt từng kênh/luồng; chỉ fallback SMS khi ZNS lỗi chắc chắn | — |
 | DEC-11 | Đã hủy: không có hệ thống cũ cần chuyển đổi | — |
@@ -168,18 +168,21 @@ Thiết kế cụ thể cho API chung, schema theo loại thông báo và ví d�
 
 - R1 có ba cấp: **Global → App/Brand → Shop**. Chiều NVC chưa dùng trong R1.
 - **Khóa ở Global:** mục đích, tính bắt buộc, mẫu SECURITY và danh sách kênh được phép của luồng.
-- **App/Brand được đặt:** định danh gửi (sender, OA ZNS, domain Email) và mẫu hiển thị theo brand.
-- **Shop chỉ được ghi đè:** bật/tắt Push (kênh tùy chọn).
-- Cấu hình lưu dạng **file trong repo** (YAML). Pull request là bước duyệt, git là phiên bản và audit. CI kiểm tra schema, biến mẫu và xung đột; hai cấu hình chồng nhau trong cùng cấp bị chặn khi merge.
-- Mỗi bản tin ghim version cấu hình tại thời điểm tạo; thay cấu hình không ảnh hưởng tin đang chờ.
-- **Kill-switch** dừng một luồng hoặc một kênh có hiệu lực ngay với cả tin đang chờ; bật/tắt kill-switch được audit.
+- **App/Brand được đặt:** mẫu hiển thị theo brand (YAML) và định danh gửi (sender, OA ZNS, domain Email), nằm trong **kết nối kênh** (DB).
+- **Shop chỉ được ghi đè:** bật/tắt Push (kênh tùy chọn). Lưu ở DB; R1 chưa có màn hình cài đặt (DEC-04) nên vận hành đặt theo yêu cầu.
+- **Chia nơi lưu theo tính chất thay đổi:**
+  - **File YAML trong repo** cho chính sách đổi chậm, cần người duyệt: loại thông báo, mẫu, tiêu chí đạt, mục đích, khóa Global, kênh được phép. Pull request là bước duyệt, git là phiên bản và audit. CI kiểm tra schema, biến mẫu và xung đột; hai cấu hình chồng nhau trong cùng cấp bị chặn khi merge.
+  - **DB và API vận hành** cho dữ liệu đổi lúc chạy: kết nối kênh, kill-switch, hạn mức ngày, bật/tắt Push của Shop. Đổi qua API có kiểm tra quyền, mọi thay đổi vào audit, **không cần sửa repo hay deploy**.
+- Mỗi bản tin ghim version YAML tại thời điểm tạo; thay YAML không ảnh hưởng tin đang chờ. Dữ liệu vận hành thì đọc giá trị hiện hành khi gửi; mỗi lần thử ghi kết nối đã dùng.
+- **Kết nối kênh:** tạo ở trạng thái nháp, gửi thử đạt mới được kích hoạt. **Credential lưu trong DB**, mã hóa envelope trước khi lưu (PO chốt 12/10/2026); khóa gốc lấy từ secret manager qua biến môi trường. Credential không hiển thị lại qua API. Kết nối lỗi hoặc dừng không tự chuyển sang brand hay pháp nhân khác.
+- **Kill-switch** dừng một luồng hoặc một kênh có hiệu lực ngay với cả tin đang chờ (kiểm tra trước mỗi lần đưa tin ra kênh); bật/tắt kill-switch được audit.
 
-**Ảnh hưởng:** ST-01, SRS-F03/F12, UX-05, AT-18.
+**Ảnh hưởng:** ST-01, SRS-F03/F12/F15, UX-05, ADR-03, AT-17/18/24.
 
 ### 2.8 DEC-08 — Ngân sách
 
 - **Chủ ngân sách là từng brand/đơn vị kinh doanh**, theo cost center. Notification không giữ sổ tài chính và không tính phí theo Shop trong R1.
-- Notification áp **hạn mức cứng theo ngày** cho từng cặp luồng × kênh có phí (SMS, ZNS, Email). Vận hành đặt hạn mức theo đề nghị của chủ ngân sách; hệ thống cảnh báo ở 80%.
+- Notification áp **hạn mức cứng theo ngày** cho từng cặp luồng × kênh có phí (SMS, ZNS, Email). Vận hành đặt hạn mức qua API nội bộ (có quyền, có audit, không cần deploy) theo đề nghị của chủ ngân sách; hệ thống cảnh báo ở 80%.
 - Chạm hạn mức: bản tin nhận trạng thái `BLOCKED_QUOTA`, có lý do, **không chuyển sang kênh có phí khác** và không báo thành công.
 - OTP có hạn mức riêng và cao, không bị chặn bởi ngân sách luồng khác; cảnh báo bất thường khi sản lượng giờ vượt 3 lần trung bình 7 ngày.
 - Cuối tháng Notification xuất báo cáo số lượng theo cost center, luồng, kênh và provider để tài chính đối soát hóa đơn.
@@ -232,7 +235,7 @@ Thiết kế cụ thể cho API chung, schema theo loại thông báo và ví d�
 - **Chỉ fallback SMS khi ZNS lỗi chắc chắn:** số không dùng Zalo, người nhận chặn OA, không liên lạc được hoặc template bị Zalo từ chối cho số đó. **Không fallback khi timeout hoặc chưa rõ.**
 - Bounce cứng của Email là thất bại cuối cùng; không retry.
 - Hết 24h vẫn chưa rõ thì đóng xử lý với kết quả `UNKNOWN`; không tự đổi thành đã giao hay thất bại.
-- Callback trễ chỉ nâng mức bằng chứng, không hạ mức đã đạt.
+- Callback trễ yếu hơn mức đã đạt không hạ mức đó (ví dụ `PROVIDER_ACCEPTED` đến sau `DELIVERED`). **Hard bounce hoặc báo giao thất bại đến sau `PROVIDER_ACCEPTED` là sự kiện tiêu cực cuối cùng, không phải bằng chứng yếu hơn:** delivery chuyển `FAILED`, `outcome` được tính lại và `revision` tăng. Nếu đến sau `DELIVERED` thì giữ `DELIVERED` và đánh dấu xung đột để vận hành đối chiếu.
 
 **Ảnh hưởng:** SRS-F07/F09, mục 8 SRS, ADR-04, AT-09/25.
 
@@ -258,7 +261,8 @@ Ngày 09/10/2026 PO xác nhận Notitek là hệ thống mới, không có hệ 
 | `notification.usage.export` | Nền tảng | Vận hành và tài chính |
 
 - Backend chỉ cho truy cập khi quyết định là `ALLOW` đúng hành động và tài nguyên; `DENY`, `NOT_EVALUATED` hoặc lỗi kiểm tra đều từ chối.
-- R1 dùng PR review cho `config.approve`; khi có màn hình quản trị thì quyền này được kiểm tra trong ứng dụng.
+- R1 dùng PR review cho `config.approve` (cấu hình YAML); khi có màn hình quản trị thì quyền này được kiểm tra trong ứng dụng.
+- Kết nối kênh, kill-switch, hạn mức ngày và thiết lập Push của Shop đổi qua API nội bộ. R1 dùng quyền `notification.connection.manage` cho các thao tác này (đề xuất, xác nhận cùng CF-07); mọi thay đổi vào audit.
 
 **Ảnh hưởng:** SRS-F05/F08/F11/F12, SRS-N05, ADR-06, AT-16/21.
 
@@ -319,6 +323,9 @@ Thứ tự ưu tiên: C6 + B9 → C1 → B10 → B2–B4 (gộp buổi ký CF-03
 | Q6 | Order kiểm Data Scope của người dùng với đơn trước khi trả thông tin thông báo cho frontend |
 | Q7 | Scope OAuth theo `<domain>.<tài_nguyên>.<hành_động>`: `notification.request.send/view/cancel`, `user.notification_recipient.resolve`, `user.notification_link.reissue` |
 | Q8 | Chốt kênh 10 mốc Order theo API v1 mục 5 và selector vận hành ở lấy hàng thất bại, giao thất bại, vi phạm SLA |
+| S6 | Bounce cứng hoặc báo giao thất bại đến sau `PROVIDER_ACCEPTED` hạ delivery xuống `FAILED` và tính lại `outcome`; đến sau `DELIVERED` thì giữ `DELIVERED` (giải quyết hai câu trái nhau ở DEC-10) |
+| S7 | `outcome` chỉ là kết quả chốt khi `processing_state` là `CLOSED`; ánh xạ B11 xét `processing_state` trước |
+| S8 | Hoãn kết quả theo trường hợp gửi (`cases[]`) khỏi R1; thêm trường tùy chọn `case_code` vào `Delivery`; `send_case` giữ làm thực thể nội bộ |
 
 Các câu hỏi kỹ thuật còn mở trong bản nháp hộp tin và tra cứu vận hành do Tech Lead chốt khi triển khai, không chặn hợp đồng gửi.
 
