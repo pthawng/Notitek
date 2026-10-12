@@ -1,6 +1,8 @@
 # Notitek - MÔ HÌNH DỮ LIỆU LOGIC VÀ TỪ ĐIỂN DỮ LIỆU
 
-**Phiên bản:** 0.5. **Ngày:** 12/10/2026. **Chủ trì:** PO Notification. **Trạng thái:** Bản nháp PO để Tech Lead review. Tech Lead hoàn thiện thành Physical DB (kiểu dữ liệu, index, partition, khóa lạc quan, migration) sau khi chốt các điểm ở mục 9.
+**Phiên bản:** 0.6. **Ngày:** 12/10/2026. **Chủ trì:** PO Notification. **Trạng thái:** Bản nháp PO để Tech Lead review. Tech Lead hoàn thiện thành Physical DB (kiểu dữ liệu, index, partition, khóa lạc quan, migration) sau khi chốt các điểm ở mục 9.
+
+Bản 0.6 so với 0.5: đối chiếu với [báo cáo đánh giá](<Notitek - ĐÁNH GIÁ LOGICAL DATABASE VÀ DATA DICTIONARY.md>) (15 điểm C01 đến C15, viết trên bản 0.3) và đóng nốt các phần còn hở mà không cần chờ provider: `push_subscription` giữ dòng đã thu hồi để chống hồi sinh và để delivery còn tham chiếu (C05), `brand_id` có điều kiện bắt buộc (C14), đơn vị đếm và nguồn báo cáo theo provider của `quota_counter` (C06), thời gian lưu của `contact_blocklist` (C09). Phần còn hoãn có chủ đích ghi ở Q10.
 
 Bản 0.5 so với 0.4: đổi tên trường và trạng thái theo [OpenAPI v1](api/openapi.json), [API README](api/README.md) và code hiện có (`internal/notification/domain`); thêm ma trận chuyển trạng thái R1 (ADR-04) theo quyết định A và B ngày 12/10/2026; đồng bộ với cơ chế hủy, outbox và transaction của worker trong [CẤU TRÚC MÃ NGUỒN](<Notitek - CẤU TRÚC MÃ NGUỒN.md>) §11; thêm dữ liệu cần để tiếp tục gửi sau `accepted`; thêm ràng buộc duy nhất cho các bảng con; sửa ERD cho khớp từ điển.
 
@@ -288,7 +290,7 @@ Cột "Bắt buộc": **Y** = không được rỗng; **N** = có thể rỗng; 
 | `context_type` | Mã | Y | P0 | `ACCOUNT` hoặc `WORKSPACE`. | Nguồn |
 | `application_id` | Mã | Y | P1 | Application/Client đích (API §4). | Nguồn |
 | `organization_id` | Định danh ngoài | C | P1 | Bắt buộc khi `WORKSPACE` (Shop là Organization loại SHOP); rỗng khi `ACCOUNT`. | Nguồn |
-| `brand_id` | Mã | N | P0 | Brand tùy chọn nhưng phải được xác minh; để chọn kết nối gửi và cost center. | Nguồn |
+| `brand_id` | Mã | C | P0 | Để chọn kết nối gửi và cost center; phải được xác minh. **Bắt buộc khi loại thông báo trong registry đã ghim khai báo cần brand** (ví dụ OTP, ZNS, SMS); thiếu thì `INVALID_REQUEST`, **không có brand mặc định ngầm**. Loại không cần brand thì có thể rỗng. | Nguồn |
 | `correlation_id` | Văn bản | N | P1 | Từ header `X-Correlation-Id`; không tham gia chống trùng. | Nguồn |
 | `cancel_group` | Văn bản | N | P1 | Nhóm hủy ổn định, namespace theo nguồn, context đầy đủ. | Nguồn |
 | `occurred_at` | Thời điểm | Y | P1 | Thời điểm sự việc ở nguồn, có offset. Cũ hơn 7 ngày bị từ chối `STALE_REQUEST`. Không dùng thời gian nhận thay thế. | Nguồn |
@@ -468,15 +470,15 @@ Trạng thái nghiệp vụ nguồn (đã chấp nhận, đã từ chối) **kh�
 
 ### 5.11 `push_subscription` — Đích Push
 
-**Ý nghĩa:** đích Web Push (FCM) do Notification giữ (DEC-01). Khác "thiết bị tin cậy" của User. **Lưu:** đến khi hủy hoặc 60 ngày không hoạt động.
+**Ý nghĩa:** đích Web Push (FCM) do Notification giữ (DEC-01). Khác "thiết bị tin cậy" của User. **Lưu:** `ACTIVE` đến khi hủy hoặc 60 ngày không hoạt động. Khi thu hồi **chỉ xóa `token_encrypted`**, giữ dòng 180 ngày từ `revoked_at` vì `channel_delivery` còn tham chiếu và để làm dấu chống hồi sinh (xem quy tắc dưới bảng).
 
 | Trường | Kiểu logic | Bắt buộc | Mức | Ý nghĩa và giá trị hợp lệ |
 |---|---|---|---|---|
 | `subscription_id` | Định danh | Y | P1 | |
 | `account_id` | Định danh ngoài | Y | P1 | Từ Access Context, không từ payload. |
 | `application_id` | Mã | Y | P1 | Ví dụ Shop `business-web`. |
-| `token_encrypted` | Dữ liệu mã hóa | Y | **P3** | Token FCM mã hóa, cần giải mã để gửi. |
-| `token_hmac` | Chuỗi băm | Y | P1 | Để tìm và kiểm tra trùng mà không giải mã. **Duy nhất trong tập `ACTIVE`**: một token một chủ hiện hành. |
+| `token_encrypted` | Dữ liệu mã hóa | C | **P3** | Token FCM mã hóa, cần giải mã để gửi. **Bắt buộc khi `ACTIVE`; xóa khi `REVOKED`.** |
+| `token_hmac` | Chuỗi băm | Y | P1 | Để tìm và kiểm tra trùng mà không giải mã. **Duy nhất trong tập `ACTIVE`**: một token một chủ hiện hành. Giữ cả ở dòng `REVOKED` (không phải bí mật dùng lại được). |
 | `registration_version` | Số nguyên | Y | P1 | Bản đăng ký cũ hơn không hồi sinh token đã thu hồi (SRS-F16.02). |
 | `status` | Mã | Y | P1 | `ACTIVE`, `REVOKED`. |
 | `revoke_reason` | Mã | C | P1 | `LOGOUT`, `INACTIVE_60D`, `FCM_UNREGISTERED`, `FCM_INVALID_ARGUMENT`, `OWNER_CHANGED`. |
@@ -484,6 +486,8 @@ Trạng thái nghiệp vụ nguồn (đã chấp nhận, đã từ chối) **kh�
 | `revoked_at` | Thời điểm | C | P1 | Đo yêu cầu hủy có hiệu lực ≤ 1 phút (SRS-P11). |
 
 Một người có nhiều đích sinh nhiều `channel_delivery`, nên token lỗi không che token khác.
+
+**Chống hồi sinh (C05):** yêu cầu đăng ký có `token_hmac` trùng một dòng `REVOKED` còn trong 180 ngày và `registration_version` nhỏ hơn hoặc bằng bản đã thu hồi thì bị từ chối; chỉ bản lớn hơn mới tạo dòng `ACTIVE` mới (dòng cũ không đổi chủ). Dòng `REVOKED` không bao giờ được gửi vì không còn token. Sau 180 ngày dòng bị xóa cùng lịch sử delivery; từ đó chỉ còn bảo vệ của nguồn cấp version (giới hạn đã chấp nhận). Nguồn cấp và ý nghĩa `registration_version` chốt cùng hợp đồng Push (M2).
 
 ### 5.12 `contact_blocklist` — Danh sách chặn toàn cục
 
@@ -507,7 +511,7 @@ Một người có nhiều đích sinh nhiều `channel_delivery`, nên token l�
 | `cost_center` | Mã | Y | P1 | Lấy từ registry theo `brand_id`. |
 | `type` | Mã | Y | P0 | |
 | `channel` | Văn bản | Y | P0 | Bốn cột này tạo **khóa chính tổ hợp**. |
-| `used_count` | Số nguyên | Y | P1 | Số lần gửi được tính. |
+| `used_count` | Số nguyên | Y | P1 | Số suất đã cấp ở Tx1, **mỗi attempt một suất** (không phải số tin accepted hay số đơn vị có phí). Báo cáo theo provider lấy từ `delivery_attempt` (có `provider`, `connection_id`), vì bộ đếm không có chiều provider. |
 
 **Quy tắc đếm (chống vượt hạn mức đồng thời và đếm đôi):**
 
@@ -627,7 +631,8 @@ Một người có nhiều đích sinh nhiều `channel_delivery`, nên token l�
 | Metadata gửi, lần thử, kết quả | `notification_request`, `send_case`, `notification_message`, `channel_delivery`, `delivery_attempt`, `delivery_evidence` | 180 ngày từ `accepted_at` | Xóa lô theo yêu cầu hoặc drop partition (Q9) |
 | Bằng chứng chưa khớp | `delivery_evidence` (`UNMATCHED`) | 180 ngày từ `received_at` | Job |
 | Tin In-app | `inbox_item` | Hiển thị 90 ngày, xóa sau 180 ngày từ `created_at` | Lọc khi tải, rồi xóa |
-| Đích Push | `push_subscription` | Đến khi hủy hoặc 60 ngày không hoạt động | Job theo `last_active_at` |
+| Đích Push | `push_subscription` | `ACTIVE` đến khi hủy hoặc 60 ngày không hoạt động (`last_active_at`); sau thu hồi xóa `token_encrypted` ngay, giữ dòng 180 ngày từ `revoked_at` | Job thu hồi, rồi xóa dòng |
+| Danh sách chặn | `contact_blocklist` | Đến khi gỡ chặn, không tự hết hạn | Gỡ qua API (có audit) |
 | Bộ đếm hạn mức | `quota_counter` | 180 ngày | Job |
 | Công việc outbox | `outbox_job` | 7 ngày sau `PUBLISHED` | Job |
 | Kết nối kênh | `channel_connection` | Đến khi thu hồi; xóa credential khi thu hồi, giữ dòng ít nhất 180 ngày | Thu hồi qua API |
@@ -679,6 +684,8 @@ Tên vật lý do Tech Lead chốt; bảng này chỉ nối hai bộ tên.
 | Bỏ `event_kind = RESULT_CHANGED`, `partition_key`, `result_revision` ở outbox | R1 không có broker sự kiện kết quả; nguồn tra `GET` theo `revision`. |
 | Đổi `outbox_event` thành `outbox_job` và thêm `status`, `available_at`, `claimed_by`, `claim_until`, `attempts`, `headers` | Cơ chế claim bằng lease của relay (CẤU TRÚC §11.3). |
 | Thêm lại `scope` và `change` ở audit | Bản 0.4 bỏ `scope` vì suy từ đối tượng, nhưng đối tượng bị xóa sau 180 ngày còn audit 2 năm; `change` để dựng lại chuỗi thay đổi. |
+| `push_subscription`: `token_encrypted` thành C; giữ dòng `REVOKED` 180 ngày | Bản 0.5 để "xóa theo hạn" trong khi `channel_delivery.push_subscription_id` bắt buộc còn 180 ngày, và xóa dòng làm mất dấu chống hồi sinh (C05). |
+| `brand_id` ở yêu cầu: N thành C | Cả OTP/ZNS/SMS cần brand để chọn kết nối và cost center; không để mỗi bên tự suy mặc định (C14). |
 | `cancel_marker`: bỏ `REF`, thêm biên nhận, thêm context đầy đủ | Hủy theo `notification_id` chưa tồn tại trả 404 nên không cần dấu; hủy nhóm cần context để không xuyên Shop (API §9). |
 | `idempotency_record`: thêm `operation`, `state`, `cancellation_id` | Lệnh hủy có không gian khóa riêng; đồng bộ OTP có `IN_PROGRESS`. |
 
@@ -695,7 +702,7 @@ Tên vật lý do Tech Lead chốt; bảng này chỉ nối hai bộ tên.
 | Q7 | Quyền cho API vận hành đổi kill-switch, hạn mức, thiết lập Shop. | R1 dùng `notification.connection.manage`. Vận hành Notification cần bật kill-switch nhanh nên có thể cần gán thêm. Xác nhận cùng CF-07. |
 | Q8 | Độ trễ hiệu lực của kill-switch và kết nối. | Kill-switch gần tức thì: tín hiệu Redis Pub/Sub khi đổi, kèm TTL tối đa 5 giây dự phòng. Kết nối làm mới tối đa 30 giây. Tech Lead chốt. |
 | Q9 | 180 ngày là mức tối thiểu hay tối đa? Drop partition cả tháng làm thời gian lưu thực tế dài hơn tới 1 tháng. | Đề xuất chấp nhận 180 ngày đến 180 ngày + 1 tháng cho metadata không chứa PII (nội dung và liên hệ đã được làm rỗng/che sớm hơn). PO xác nhận. |
-| Q10 | **Hoãn có chủ đích:** callback không khớp có cùng ID giữa hai kết nối (C03), lịch sử version kết nối cho xác thực callback sau khi xoay khóa (C04), tombstone token Push chống hồi sinh (C05), xoay khóa HMAC của blocklist và token Push (C14). | Thiết kế khi chọn provider (CF-12) và làm Push (M2), vì phụ thuộc hành vi provider thật. Ghi nhận rủi ro. |
+| Q10 | **Hoãn có chủ đích:** callback không khớp có cùng ID giữa hai kết nối (C03), lịch sử version kết nối cho xác thực callback sau khi xoay khóa (C04), nguồn cấp `registration_version` (phần còn lại của C05), xoay khóa HMAC của blocklist và token Push (C14: blocklist không lưu liên hệ thô nên không thể tính lại HMAC từ HMAC cũ, cần kế hoạch xoay trước khi đổi khóa). | Thiết kế khi chọn provider (CF-12) và làm Push (M2), vì phụ thuộc hành vi provider thật. Ghi nhận rủi ro. Hai việc nên làm trước khi nhận callback thật: thêm `connection_id` vào `delivery_evidence` và chốt khóa chống trùng theo `(connection_id, provider_event_id)`. |
 
 ## 10 Việc tiếp theo
 

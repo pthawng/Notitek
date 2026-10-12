@@ -2,6 +2,8 @@
 
 Ngày đánh giá: 09/10/2026. Đối tượng: **Mô hình dữ liệu logic và từ điển dữ liệu v0.3** trong workspace hiện tại.
 
+**Cập nhật 12/10/2026:** đã đối chiếu 15 điểm với LDB v0.6 ở mục 1.1. Phần 2 và 3 bên dưới giữ nguyên nội dung đánh giá v0.3 làm lịch sử; tên trường, trạng thái và bảng trong đó là của v0.3 (ví dụ `source_system`, `flow_code`, `goal_status`, `FAILED_FINAL`, `fallback_of_delivery_id`, `RESULT_CHANGED`, `REF`), đã được đổi theo OpenAPI ở LDB v0.5. Muốn biết hiện trạng, đọc mục 1.1.
+
 ## 1. Kết luận và phạm vi
 
 **Thiết kế có nền tảng hợp lý, nhưng chưa đủ rõ để chốt toàn bộ Physical DB và triển khai các luồng R1.** Có 8 điểm phù hợp về hướng thiết kế và 15 điểm cần sửa hoặc bổ sung dưới đây. Đây là số nhóm nhận định, không phải điểm số chất lượng hay tỷ lệ đạt.
@@ -27,6 +29,32 @@ Không xem việc chưa chọn kiểu PostgreSQL, index, UUIDv4/v7, khóa lạc 
 | AT | [Backlog triển khai và kịch bản nghiệm thu](<Notitek - BACKLOG TRIỂN KHAI VÀ KỊCH BẢN NGHIỆM THU.md>) | Gắn showcase với kịch bản nghiệm thu đã có. |
 
 Khi các tài liệu khác ngày hoặc khác phiên bản có câu chữ chưa đồng bộ, báo cáo chỉ rõ chỗ lệch; không tự coi một phương án đề xuất là quyết định PO mới.
+
+### 1.1 Kết quả đối chiếu với LDB v0.6
+
+Trạng thái: **Đã đóng** (thiết kế logic đã có câu trả lời trong LDB), **Đóng một phần** (còn phần hoãn hoặc ngoài LDB), **Hoãn có chủ đích** (PO đã quyết định chờ provider/Push, ghi ở Q10). "Đã đóng" chỉ nghĩa là tài liệu đã đủ; chưa có DDL, code hay AT nào được chạy.
+
+| Mã | Trạng thái | Nơi giải quyết trong LDB v0.6 | Còn lại |
+|---|---|---|---|
+| C01 | Đã đóng | Nguyên tắc 12; `notification_request.data` và `recipients_spec`; `transient_secret` (TTL ≤ 10 phút, không kéo dài); quy tắc phục hồi gọi lại API cấp link của User (CF-10) | Cần AT dừng tiến trình sau 202 (AT-02/05) |
+| C02 | Đã đóng | §4.3 (`AVAILABLE` cho In-app, chờ retry là `PROCESSING` + `next_attempt_at`); §4.4 ma trận 19 dòng; quyết định A (bounce sau accepted) và B (`outcome` chốt khi `CLOSED`) | Cần AT cho dòng 15 |
+| C03 | Hoãn có chủ đích | `delivery_evidence` chỉ cập nhật `attempt_id`, `applied_result` khi khớp muộn (nguyên tắc 4) nên callback đến sớm được khớp mà vẫn giữ bản gốc | Scope kết nối và khóa chống trùng theo `(connection_id, provider_event_id)` chờ provider (Q10); nên làm trước khi nhận callback thật |
+| C04 | Đóng một phần | `credential_*` thành C (xóa khi `REVOKED`); `DISABLED` tách `REVOKED`; đổi credential/sender đưa `ACTIVE` về `DRAFT` | Lịch sử version/khóa xác thực callback sau khi xoay khóa chờ provider (Q10) |
+| C05 | Đóng một phần | Giữ dòng `REVOKED` 180 ngày, chỉ xóa `token_encrypted`; `token_hmac` giữ để chặn đăng ký version cũ; delivery vẫn tham chiếu được | Nguồn cấp `registration_version`; bảo vệ sau 180 ngày (Q10) |
+| C06 | Đã đóng | §5.13: cấp suất nguyên tử, cùng transaction với attempt, hoàn chỉ khi chắc chắn chưa gửi, không hoàn khi `ACCEPTED`/`UNKNOWN`; đơn vị đếm là attempt; báo cáo theo provider từ `delivery_attempt`; lịch sử hạn mức ở `audit_log.change` | Cần AT-19 song song và replay |
+| C07 | Đã đóng | `audit_log.scope`, `change` (trước/sau theo allowlist), `reason` bắt buộc theo danh sách hành động | Allowlist trường cụ thể chốt khi thiết kế API |
+| C08 | Đã đóng (chính sách) | Nguyên tắc 7: `rendered_content`, `title`, `preview` không chứa liên hệ đầy đủ, che trước khi lưu | Bước che phải được code và test; AT-03 |
+| C09 | Đóng một phần | Nguyên tắc 13 (mốc `accepted_at`, xóa cùng lúc), §6 có mốc từng nhóm; v0.6 thêm retention của `contact_blocklist`; ngoại lệ của nguyên tắc 6 đã ghi | Q9: 180 ngày là tối thiểu hay tối đa khi drop partition (chờ PO) |
+| C10 | Đã đóng | `cancel_marker.target_kind` tách `NOTIFICATION`/`GROUP`; phát lại trả biên nhận gốc, không kéo dài `tombstone_expires_at`; biên nhận ba số không chồng nhau | AT-10/23 |
+| C11 | Đã đóng | ERD v0.5: idempotency 0..1, evidence phía attempt 0..1, `QUOTA_COUNTER` PK bốn cột, `OUTBOX_JOB` ghi chú quan hệ đa hình, `SEND_CASE` chỉ có sau lập kế hoạch | Không |
+| C12 | Đã đóng | Duy nhất `(notification_id, case_code)`, `(case_id, recipient_ref)`, `(message_id, channel, push_subscription_id)`, `(delivery_id, attempt_no)`, `inbox_item.delivery_id`, `source_dedupe_key` có namespace | Chọn constraint vật lý khi làm DDL |
+| C13 | Đã đóng | `reconcile_deadline_at` cố định khi vào `UNKNOWN`; `updated_at` không dùng cho cửa sổ; callback sau `CLOSED` vẫn ghi bằng chứng, không mở lại việc gửi | AT-23/25 |
+| C14 | Đóng một phần | `brand_id` C (v0.6, không brand mặc định ngầm); `organization_id` đúng một theo `context_type`; `account_id` rỗng cho cả người được mời chưa có tài khoản; `hmac_key_id` ở idempotency | Xoay khóa HMAC của blocklist và token Push chờ kế hoạch (Q10) |
+| C15 | Đóng một phần | LDB đã nhất quán: không có cột môi trường, hạn mức ở `quota_limit`, Push luôn `OPTIONAL` | Q6: câu chữ "môi trường" trong DEC-02, SRS-F02.01, CẤU TRÚC §11.1, API §7 và ví dụ Push bắt buộc ở SRS §8.2 chưa sửa (ngoài LDB) |
+
+Tổng hợp: 9 đã đóng (C01, C02, C06, C07, C08, C10, C11, C12, C13), 5 đóng một phần (C04, C05, C09, C14, C15), 1 hoãn có chủ đích (C03). Không điểm mới nào phát sinh từ việc đối chiếu.
+
+Phần "phù hợp" P01 đến P08 vẫn đúng về ý, nhưng ánh xạ tên như sau: P01 `goal_status` → `outcome`, `FAILED_FINAL` → `FAILED`; P02 `(source_system, source_ref)` → `(source, source_ref)` qua `idempotency_record`; P04 `FAILED_DEFINITE` → attempt `REJECTED_DEFINITE`, fallback → `requirement=ALTERNATIVE` cùng `requirement_group`; P06 R1 không có event `RESULT_CHANGED` (kết quả cho nguồn đi qua `GET` theo `revision`), `outbox_job` chỉ có `PLAN` và `SEND`; P07 không còn loại `REF`.
 
 ## 2. Các phần phù hợp, kèm showcase
 
