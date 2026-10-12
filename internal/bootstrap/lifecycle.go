@@ -44,6 +44,8 @@ func Main(runtime Runtime) int {
 		Level: cfg.LogLevel, Runtime: string(runtime), Env: cfg.Env,
 	})
 
+	logger.Info("configuration loaded", "config", cfg)
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -92,5 +94,12 @@ func run(ctx context.Context, cfg Config, logger *slog.Logger, build assemble) (
 func adminServer(cfg Config, deps *Dependencies, logger *slog.Logger) Component {
 	mux := http.NewServeMux()
 	httpx.NewHealth(deps.Checks()).Register(mux)
-	return httpx.NewServer("admin", cfg.Admin, mux, logger)
+	httpx.RegisterFallback(mux, logger)
+	handler := httpx.Chain(mux,
+		httpx.Correlation(),
+		httpx.Recover(logger),
+		httpx.SecurityHeaders(),
+		httpx.NoStore(),
+	)
+	return httpx.NewServer("admin", cfg.Admin, handler, logger)
 }

@@ -58,6 +58,21 @@ func NoStore() Middleware {
 	}
 }
 
+// SecurityHeaders sets the response headers that harden a JSON API: no MIME
+// sniffing, no referrer, and a policy that forbids rendering any response as
+// a document.
+func SecurityHeaders() Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			h := w.Header()
+			h.Set("X-Content-Type-Options", "nosniff")
+			h.Set("Referrer-Policy", "no-referrer")
+			h.Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // MaxBody limits request bodies to n bytes (64 KiB per SRS-P04).
 func MaxBody(n int64) Middleware {
 	return func(next http.Handler) http.Handler {
@@ -109,6 +124,7 @@ func AccessLog(logger *slog.Logger) Middleware {
 				"method", r.Method,
 				"route", route,
 				"status", rec.status,
+				"bytes", rec.bytes,
 				"duration_ms", time.Since(start).Milliseconds(),
 			)
 		})
@@ -118,11 +134,18 @@ func AccessLog(logger *slog.Logger) Middleware {
 type statusRecorder struct {
 	http.ResponseWriter
 	status int
+	bytes  int64
 }
 
 func (r *statusRecorder) WriteHeader(code int) {
 	r.status = code
 	r.ResponseWriter.WriteHeader(code)
+}
+
+func (r *statusRecorder) Write(b []byte) (int, error) {
+	n, err := r.ResponseWriter.Write(b)
+	r.bytes += int64(n)
+	return n, err
 }
 
 // Unwrap lets http.ResponseController reach the underlying writer (needed
