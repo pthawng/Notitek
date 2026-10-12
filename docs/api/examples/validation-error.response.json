@@ -1,0 +1,27 @@
+{
+  "error": true,
+  "message": "Có trường sai kiểu dữ liệu.",
+  "data": {
+    "type": "urn:supership:notitek:error:invalid-request",
+    "title": "Invalid request",
+    "status": 400,
+    "code": "INVALID_REQUEST",
+    "instance": "/v1/notifications",
+    "trace_id": "trace-demo",
+    "retryable": false,
+    "details": [
+      {
+        "field": "/recipients/0/phone",
+        "location": "body",
+        "code": "invalid_type",
+        "message": "Trường phải có kiểu string."
+      },
+      {
+        "field": "Idempotency-Key",
+        "location": "header",
+        "code": "required",
+        "message": "Cần có header Idempotency-Key."
+      }
+    ]
+  }
+}

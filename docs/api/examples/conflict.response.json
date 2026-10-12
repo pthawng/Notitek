@@ -1,9 +1,14 @@
 {
   "error": true,
-  "message": "Reference already used with different input",
+  "message": "Reference đã được dùng với nội dung khác.",
   "data": {
+    "type": "urn:supership:notitek:error:idempotency-conflict",
+    "title": "Idempotency conflict",
+    "status": 409,
     "code": "IDEMPOTENCY_CONFLICT",
+    "instance": "/v1/notifications",
     "trace_id": "trace-demo",
+    "retryable": false,
     "details": []
   }
 }

@@ -181,22 +181,24 @@ Response không trả request data/secrets, token, địa chỉ nhận đầy đ
 
 - `processing_state`: PENDING, PROCESSING, CLOSED. CLOSED nghĩa không còn chủ động gửi; callback muộn vẫn có thể cập nhật bằng chứng.
 - `outcome`: PENDING, ACHIEVED, PARTIAL, FAILED, UNKNOWN, CANCELLED, EXPIRED, SUPPRESSED.
-- `deliveries`: kết quả riêng từng người/kênh, requirement REQUIRED/OPTIONAL/ALTERNATIVE và requirement_group.
+- `deliveries`: kết quả riêng từng người/kênh, requirement REQUIRED/OPTIONAL/ALTERNATIVE và requirement_group. `case_code` (tùy chọn) cho biết delivery thuộc trường hợp gửi nào (ví dụ `SHOP_ALERT`, `CONSIGNEE_NOTICE`) để consumer gom nhóm; kết quả tổng hợp theo từng trường hợp chưa có ở R1.
 - `revision`: số tăng đơn điệu mỗi thay đổi quan sát được, phục vụ polling/event consumer.
 
 Ánh xạ hiển thị cho frontend nội bộ (B11). User lưu `notification_id` cùng lời mời/kích hoạt và trả `delivery_status` qua API của User; frontend không gọi thẳng API ra lệnh gửi:
 
 | Notitek | `delivery_status` |
 |---|---|
-| `processing_state` PENDING/PROCESSING, chưa có lần thử lỗi | QUEUED |
+| `outcome` PENDING, hoặc PARTIAL khi `processing_state` chưa CLOSED, chưa có lần thử lỗi | QUEUED |
 | PROCESSING và có delivery với `attempt_count` ≥ 1 và `next_attempt_at` khác null | RETRYING |
-| `outcome` ACHIEVED, PARTIAL | SENT |
+| `outcome` ACHIEVED, hoặc PARTIAL khi `processing_state` CLOSED | SENT |
 | `outcome` FAILED, EXPIRED, CANCELLED, SUPPRESSED | FAILED |
 | `outcome` UNKNOWN | UNCONFIRMED (giá trị mới, frontend phải bổ sung; không gộp vào SENT) |
 
 Mỗi nhóm bắt buộc phải đạt ngưỡng bằng chứng của DEC-10; nhóm thay thế đạt khi một kênh hợp lệ đạt. Tất cả nhóm bắt buộc đạt → ACHIEVED dù kênh OPTIONAL lỗi; lỗi tùy chọn vẫn hiện trong deliveries. Một số nhóm đạt → PARTIAL; chưa nhóm nào đạt và còn việc có thể tiếp tục → PENDING; không còn việc, còn kết quả chưa rõ → UNKNOWN. Nếu không đạt và không còn UNKNOWN, toàn bộ bị hủy/hết hạn/chặn tương ứng → CANCELLED/EXPIRED/SUPPRESSED; trường hợp hỗn hợp còn lại → FAILED. Không có người nhận hợp lệ → SUPPRESSED với lý do, không dùng tập rỗng để báo ACHIEVED.
 
 PROVIDER_ACCEPTED là bằng chứng provider nhận, không phải DELIVERED. In-app đạt ở AVAILABLE. Trạng thái đọc không nằm trong kết quả gửi. Bằng chứng đã ghi nhận không bị xóa khi có phản hồi xung đột; cần lưu delivery outcome bất lợi và reason_code để tra cứu, không che hard bounce. `UNKNOWN` quá 24h đóng xử lý, vẫn là UNKNOWN.
+
+`outcome` chỉ là kết quả chốt khi `processing_state` là CLOSED (quyết định 12/10/2026). Khi chưa CLOSED, PARTIAL nghĩa là đã đạt một phần và phần còn lại đang chạy, nên consumer xét `processing_state` trước. Hard bounce hoặc báo giao thất bại đến **sau** PROVIDER_ACCEPTED chuyển delivery sang FAILED (`reason_code` BOUNCE_HARD hoặc DELIVERY_FAILED), tính lại `outcome` và tăng `revision`; nếu đến sau DELIVERED thì delivery giữ DELIVERED và bằng chứng được đánh xung đột. Ma trận chuyển trạng thái đầy đủ ở tài liệu mô hình dữ liệu mục 4.4.
 
 ## 9. Hủy và sự kiện đến muộn
 
@@ -210,11 +212,45 @@ Hủy group dùng `(source, environment, context đầy đủ, cancel_group)`; k
 
 Danh mục mã ổn định nằm ở `ApiError.x-error-codes` trong OpenAPI; consumer xử lý mã chưa biết theo HTTP status.
 
+### 10.1 Cấu trúc lỗi
+
+Mọi lỗi dùng envelope của nền tảng `{error, message, data}` với `error: true`. `message` là câu giải thích cho người đọc (tiếng Việt ở R1, không dùng để rẽ nhánh). `data` theo **RFC 9457 (Problem Details for HTTP APIs)** cộng các trường mở rộng:
+
+| Trường | Nguồn | Ý nghĩa |
+|---|---|---|
+| `type` | RFC 9457 | URI ổn định của loại lỗi, `urn:supership:notitek:error:<mã viết kebab-case>`. Là URN nên không hứa có tài liệu tại URL |
+| `title` | RFC 9457 | Tóm tắt ngắn, không đổi giữa các lần xảy ra |
+| `status` | RFC 9457 | Mã HTTP, lặp lại trong body cho consumer chỉ giữ body |
+| `instance` | RFC 9457 | Đường dẫn của request lỗi; không có query string |
+| `code` | Mở rộng | Mã máy ổn định, dùng để rẽ nhánh. Mã chưa biết thì xử lý theo `status` |
+| `trace_id` | Mở rộng | Giá trị `X-Correlation-Id`; gửi kèm khi cần hỗ trợ |
+| `retryable` | Mở rộng | `true` chỉ khi lặp lại đúng request sau đó có thể thành công và chưa có việc nào được nhận: 429, 503, `IDEMPOTENCY_IN_PROGRESS`. `INTERNAL_ERROR` là `false`: tra cứu theo reference trước khi gửi lại |
+| `retry_after_seconds` | Mở rộng | Có khi `retryable`; bằng header `Retry-After` (RFC 9110 §10.2.3, dạng số giây) |
+| `details` | Mở rộng | Lỗi theo từng trường, xem dưới |
+
+`envelope.message` đóng vai trò `detail` của RFC 9457, nên không lặp lại trong `data`. Body vẫn là `application/json` (không phải `application/problem+json`) vì envelope là hợp đồng chung với User và Order; parser Problem Details đọc được `data`.
+
+Mỗi phần tử `details`:
+
+| Trường | Ý nghĩa |
+|---|---|
+| `field` | JSON Pointer (RFC 6901) vào body, ví dụ `/recipients/0/phone`, hoặc `/` cho cả body; với header, query, path là tên của chúng |
+| `location` | `body`, `header`, `query` hoặc `path` |
+| `code` | Lý do ổn định: `required`, `invalid_type`, `invalid_format`, `invalid_value`, `out_of_range`, `too_long`, `unknown_field`, `malformed_json`, `mismatch` |
+| `message` | Câu giải thích an toàn để hiển thị |
+
+**Không bao giờ lặp lại giá trị đầu vào** trong `message` hay `details`, vì body có thể chứa OTP, link hay số điện thoại. Lỗi kiểu dữ liệu khi giải mã JSON không có chỉ số mảng nếu bộ giải mã không báo (ví dụ `/recipients/phone`).
+
+Ví dụ: [validation-error](examples/validation-error.response.json), [rate-limited](examples/rate-limited.response.json), [conflict](examples/conflict.response.json).
+
+Đường dẫn hay phương thức không có route cũng trả envelope: 404 `NOT_FOUND`, hoặc 405 `METHOD_NOT_ALLOWED` kèm header `Allow` (RFC 9110 §15.5.6). Mọi phản hồi có `X-Content-Type-Options: nosniff` và `Cache-Control: no-store`.
+
 | HTTP | Mã điển hình | Hành vi caller |
 |---|---|---|
 | 400 | INVALID_REQUEST, REFERENCE_MISMATCH | Sửa envelope/header; details chỉ có field/code, không echo input |
 | 401/403 | UNAUTHENTICATED, FORBIDDEN | Sửa xác thực/quyền, không retry mù quáng |
 | 404 | NOT_FOUND | Không có hoặc không được xem; không suy ra chắc chắn chưa gửi sau network timeout |
+| 405 | METHOD_NOT_ALLOWED | Dùng phương thức trong header `Allow` |
 | 409 | IDEMPOTENCY_CONFLICT, IDEMPOTENCY_IN_PROGRESS, REFERENCE_RETIRED | Không đổi key để né; IN_PROGRESS thì tra cứu |
 | 413/415 | PAYLOAD_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE | Giới hạn 65536 byte JSON đã giải nén; application/json |
 | 422 | UNKNOWN_TYPE, UNSUPPORTED_TYPE_VERSION, INVALID_PROFILE, INVALID_TIME, STALE_REQUEST, DEADLINE_EXPIRED, UNSUPPORTED_PURPOSE | Sửa hợp đồng; MARKETING bị từ chối R1 |

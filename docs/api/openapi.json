@@ -2725,6 +2725,13 @@
             "maxLength": 128,
             "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
           },
+          "case_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+            "description": "Optional. Send case this delivery belongs to (for example SHOP_ALERT, CONSIGNEE_NOTICE), so consumers can group deliveries."
+          },
           "state": {
             "type": "string",
             "enum": [
@@ -2939,33 +2946,86 @@
           "field": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 200
+            "maxLength": 200,
+            "description": "JSON Pointer (RFC 6901) into the body, or '/' for the whole body, when location is body; otherwise the header, query parameter or path variable name."
+          },
+          "location": {
+            "type": "string",
+            "enum": [
+              "body",
+              "header",
+              "query",
+              "path"
+            ]
           },
           "code": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Stable machine reason, for example required, invalid_type, invalid_format, invalid_value, out_of_range, too_long, unknown_field, malformed_json, mismatch."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Safe to show. Never echoes the input value."
           }
         },
         "required": [
           "field",
-          "code"
+          "location",
+          "code",
+          "message"
         ]
       },
       "ApiError": {
         "type": "object",
         "additionalProperties": false,
+        "description": "Problem details of one failed request. type, title, status and instance are the members of RFC 9457; the envelope message plays the role of detail; code, trace_id, retryable, retry_after_seconds and details are extension members.",
         "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 200,
+            "description": "Stable URI of the problem type, urn:supership:notitek:error:<code in kebab-case>."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Short summary of the problem type. Does not change between occurrences."
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599,
+            "description": "HTTP status of the response, repeated for consumers that only keep the body."
+          },
           "code": {
             "type": "string",
             "minLength": 1,
             "maxLength": 100,
             "description": "Stable machine code; see x-error-codes. Consumers must handle unknown codes by HTTP status."
           },
+          "instance": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Path of the request that failed. The query string is never included."
+          },
           "trace_id": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 128
+            "maxLength": 128,
+            "description": "Correlation id of the request (X-Correlation-Id); quote it when asking for support."
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": "True only when repeating the same request later can succeed and no work was accepted: 429, 503 and IDEMPOTENCY_IN_PROGRESS."
+          },
+          "retry_after_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Present when retryable; equals the Retry-After header."
           },
           "details": {
             "type": "array",
@@ -2977,8 +3037,13 @@
           }
         },
         "required": [
+          "type",
+          "title",
+          "status",
           "code",
+          "instance",
           "trace_id",
+          "retryable",
           "details"
         ],
         "x-error-codes": {
@@ -3001,7 +3066,8 @@
           "DEADLINE_EXPIRED": 422,
           "UNSUPPORTED_PURPOSE": 422,
           "RATE_LIMITED": 429,
-          "SERVICE_UNAVAILABLE": 503
+          "SERVICE_UNAVAILABLE": 503,
+          "METHOD_NOT_ALLOWED": 405
         }
       },
       "NotificationResponse": {
