@@ -49,7 +49,7 @@ func TestTransitionMatrix(t *testing.T) {
 		{"2 kill-switch on pending", dl(sms, req, pending, false), ev(domain.EventSuppressed, domain.ReasonKillSwitch),
 			domain.Change{Row: 2, From: pending, To: suppress, Reason: domain.ReasonKillSwitch}},
 		{"2 quota on a waiting retry", dl(zns, alt, process, false), ev(domain.EventSuppressed, domain.ReasonBlockedQuota),
-			domain.Change{Row: 2, From: process, To: suppress, Reason: domain.ReasonBlockedQuota}},
+			domain.Change{Row: 2, From: process, To: suppress, Reason: domain.ReasonBlockedQuota, SkipFallback: true}},
 		{"2 in-app kill-switch", dl(app, req, pending, false), ev(domain.EventSuppressed, domain.ReasonKillSwitch),
 			domain.Change{Row: 2, From: pending, To: suppress, Reason: domain.ReasonKillSwitch}},
 		{"3 cancel pending", dl(app, req, pending, false), ev(domain.EventCancelled, "ORDER_DELIVERED"),
@@ -58,22 +58,30 @@ func TestTransitionMatrix(t *testing.T) {
 			domain.Change{Row: 3, From: process, To: cancelled, Reason: "ORDER_DELIVERED"}},
 		{"4 deadline pending", dl(eml, req, pending, false), ev(domain.EventDeadlinePassed, ""),
 			domain.Change{Row: 4, From: pending, To: expired, Reason: domain.ReasonDeadlinePassed}},
+		{"4 primary of a fallback group expired", dl(zns, alt, pending, false), ev(domain.EventDeadlinePassed, ""),
+			domain.Change{Row: 4, From: pending, To: expired, Reason: domain.ReasonDeadlinePassed, SkipFallback: true}},
+		{"3 cancel does not skip, it cancels the siblings itself", dl(zns, alt, pending, false), ev(domain.EventCancelled, "ORDER_DELIVERED"),
+			domain.Change{Row: 3, From: pending, To: cancelled, Reason: "ORDER_DELIVERED"}},
 		{"4 deadline waiting retry", dl(eml, req, process, false), ev(domain.EventDeadlinePassed, ""),
 			domain.Change{Row: 4, From: process, To: expired, Reason: domain.ReasonDeadlinePassed}},
 		{"5 inbox stored", dl(app, req, pending, false), ev(domain.EventInboxStored, ""),
 			domain.Change{Row: 5, From: pending, To: available}},
 		{"6 attempt accepted", dl(pus, opt, process, true), ev(domain.EventAttemptAccepted, ""),
 			domain.Change{Row: 6, From: process, To: accepted}},
+		{"6 primary of a fallback group accepted", dl(zns, alt, process, true), ev(domain.EventAttemptAccepted, ""),
+			domain.Change{Row: 6, From: process, To: accepted, SkipFallback: true}},
 		{"7 transient, retry left", dl(eml, req, process, true), domain.Event{Kind: domain.EventAttemptTransient, RetryAllowed: true},
 			domain.Change{Row: 7, From: process, To: process, ScheduleRetry: true, RefundQuota: true}},
 		{"8 transient, no retry left", dl(eml, req, process, true), domain.Event{Kind: domain.EventAttemptTransient},
 			domain.Change{Row: 8, From: process, To: failed, Reason: domain.ReasonRetryExhausted, RefundQuota: true}},
+		{"8 primary of a fallback group out of retries", dl(zns, alt, process, true), domain.Event{Kind: domain.EventAttemptTransient},
+			domain.Change{Row: 8, From: process, To: failed, Reason: domain.ReasonRetryExhausted, RefundQuota: true, SkipFallback: true}},
 		{"9 rejected, alternative group", dl(zns, alt, process, true), ev(domain.EventAttemptRejected, domain.ReasonTemplateRejected),
 			domain.Change{Row: 9, From: process, To: failed, Reason: domain.ReasonTemplateRejected, RefundQuota: true, ActivateFallback: true}},
 		{"9 rejected, required delivery", dl(sms, req, process, true), ev(domain.EventAttemptRejected, domain.ReasonInvalidDestination),
 			domain.Change{Row: 9, From: process, To: failed, Reason: domain.ReasonInvalidDestination, RefundQuota: true}},
 		{"10 provider timeout", dl(zns, alt, process, true), ev(domain.EventAttemptUnknown, domain.ReasonProviderTimeout),
-			domain.Change{Row: 10, From: process, To: unknown, Reason: domain.ReasonProviderTimeout, StartReconcileWindow: true}},
+			domain.Change{Row: 10, From: process, To: unknown, Reason: domain.ReasonProviderTimeout, StartReconcileWindow: true, SkipFallback: true}},
 		{"10 worker lost its lease", dl(sms, req, process, true), ev(domain.EventAttemptUnknown, domain.ReasonWorkerLost),
 			domain.Change{Row: 10, From: process, To: unknown, Reason: domain.ReasonWorkerLost, StartReconcileWindow: true}},
 		{"11 unknown then accepted", dl(zns, alt, unknown, false), ev(domain.EventEvidenceAccepted, ""),
@@ -102,6 +110,8 @@ func TestTransitionMatrix(t *testing.T) {
 			domain.Change{Row: 19, From: failed, To: failed, Evidence: domain.EvidenceConflict}},
 		{"19 cancelled then accepted", dl(sms, req, cancelled, false), ev(domain.EventEvidenceAccepted, ""),
 			domain.Change{Row: 19, From: cancelled, To: cancelled, Evidence: domain.EvidenceConflict}},
+		{"20 fallback not needed", dl(sms, alt, pending, false), ev(domain.EventFallbackNotNeeded, ""),
+			domain.Change{Row: 20, From: pending, To: suppress, Reason: domain.ReasonFallbackNotNeeded}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -199,6 +209,72 @@ func TestUnknownIsNeverResent(t *testing.T) {
 	}
 }
 
+// TestFallbackThatNeverRunsIsClosed: ZNS first, SMS only if ZNS is
+// definitely rejected. When ZNS is accepted or UNKNOWN, the SMS that never ran
+// must leave PENDING (row 20), otherwise the request never closes.
+func TestFallbackThatNeverRunsIsClosed(t *testing.T) {
+	cases := []struct {
+		name        string
+		primary     domain.Event
+		wantOutcome domain.Outcome
+	}{
+		{"ZNS accepted", ev(domain.EventAttemptAccepted, ""), domain.OutcomeAchieved},
+		{"ZNS unknown", ev(domain.EventAttemptUnknown, domain.ReasonProviderTimeout), domain.OutcomeUnknown},
+		{"ZNS out of retries", domain.Event{Kind: domain.EventAttemptTransient}, domain.OutcomeFailed},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			zalo := dl(zns, alt, process, true)
+			fallback := dl(sms, alt, pending, false)
+
+			pc, err := domain.Transition(zalo, c.primary)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !pc.SkipFallback || pc.ActivateFallback {
+				t.Fatalf("primary change %+v: want SkipFallback only", pc)
+			}
+			zalo.State, zalo.AttemptInFlight = pc.To, false
+
+			fc, err := domain.Transition(fallback, ev(domain.EventFallbackNotNeeded, ""))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if fc.To != suppress || fc.Reason != domain.ReasonFallbackNotNeeded || !fc.BumpsRevision() || fc.SkipFallback {
+				t.Errorf("fallback change %+v", fc)
+			}
+			fallback.State = fc.To
+
+			if zalo.State.Active() || fallback.State.Active() {
+				t.Fatal("a delivery is still active: the request could not close")
+			}
+			out, err := domain.AggregateOutcome([]domain.Delivery{zalo, fallback})
+			if err != nil || out != c.wantOutcome {
+				t.Errorf("outcome %s, %v; want %s", out, err, c.wantOutcome)
+			}
+		})
+	}
+
+	// A definite rejection starts the fallback instead of closing it.
+	pc, err := domain.Transition(dl(zns, alt, process, true), ev(domain.EventAttemptRejected, domain.ReasonTemplateRejected))
+	if err != nil || !pc.ActivateFallback || pc.SkipFallback {
+		t.Errorf("rejection: %+v, %v", pc, err)
+	}
+
+	// Row 20 only closes a fallback that never ran.
+	for _, d := range []domain.Delivery{
+		dl(sms, req, pending, false),  // not in an ALTERNATIVE group
+		dl(sms, alt, process, false),  // already ran once, waiting to retry
+		dl(sms, alt, process, true),   // running
+		dl(sms, alt, accepted, false), // already sent
+		dl(sms, alt, suppress, false), // already closed
+	} {
+		if _, err := domain.Transition(d, ev(domain.EventFallbackNotNeeded, "")); !errors.Is(err, domain.ErrInvalidTransition) {
+			t.Errorf("FALLBACK_NOT_NEEDED on %s/%s: %v, want ErrInvalidTransition", d.State, d.Requirement, err)
+		}
+	}
+}
+
 // TestRevisionFollowsWhatTheAPIShows: the revision moves on every change the
 // API shows, including a new attempt or a scheduled retry in PROCESSING, and
 // not on evidence that changes nothing (data model v0.8 §4.4).
@@ -242,6 +318,7 @@ func TestTransitionChecksReasons(t *testing.T) {
 		{"cancel without reason", dl(sms, req, pending, false), ev(domain.EventCancelled, "")},
 		{"rejection with a bounce reason", dl(sms, req, process, true), ev(domain.EventAttemptRejected, domain.ReasonBounceHard)},
 		{"unknown with a failure reason", dl(sms, req, process, true), ev(domain.EventAttemptUnknown, domain.ReasonProviderRejected)},
+		{"suppress as fallback not needed", dl(sms, alt, pending, false), ev(domain.EventSuppressed, domain.ReasonFallbackNotNeeded)},
 		{"evidence with retry exhausted", dl(sms, req, unknown, false), ev(domain.EventEvidenceFailed, domain.ReasonRetryExhausted)},
 	}
 	for _, c := range cases {
@@ -272,6 +349,7 @@ func TestTransitionInvariants(t *testing.T) {
 		ev(domain.EventEvidenceDelivered, ""),
 		ev(domain.EventEvidenceFailed, domain.ReasonBounceHard),
 		ev(domain.EventReconcileDeadline, ""),
+		ev(domain.EventFallbackNotNeeded, ""),
 		ev("SOMETHING_NEW", ""),
 	}
 	evidence := map[domain.EventKind]bool{
@@ -302,7 +380,7 @@ func TestTransitionInvariants(t *testing.T) {
 			}
 		}
 	}
-	for row := 1; row <= 19; row++ {
+	for row := 1; row <= 20; row++ {
 		if !reached[row] {
 			t.Errorf("matrix row %d is never reached", row)
 		}
@@ -313,7 +391,7 @@ func checkInvariants(t *testing.T, d domain.Delivery, e domain.Event, c domain.C
 	t.Helper()
 	where := func() string { return string(e.Kind) + " on " + string(d.State) + "/" + string(d.Channel) }
 
-	if c.From != d.State || c.Row < 1 || c.Row > 19 {
+	if c.From != d.State || c.Row < 1 || c.Row > 20 {
 		t.Errorf("%s: malformed change %+v", where(), c)
 	}
 	if !d.State.Active() && c.To.Active() {
@@ -342,6 +420,12 @@ func checkInvariants(t *testing.T, d domain.Delivery, e domain.Event, c domain.C
 	}
 	if c.To == unknown && (c.RefundQuota || c.ScheduleRetry || c.ActivateFallback) {
 		t.Errorf("%s: UNKNOWN must not refund, retry or fall back", where())
+	}
+	if c.SkipFallback && (d.Requirement != alt || !d.State.Active() || c.To.Active() || c.ActivateFallback) {
+		t.Errorf("%s: SkipFallback only when an ALTERNATIVE delivery settles without falling back", where())
+	}
+	if c.Row == 20 && (d.State != pending || d.Requirement != alt) {
+		t.Errorf("%s: only a fallback that never ran is closed as not needed", where())
 	}
 	if c.StartReconcileWindow != (c.Row == 10) {
 		t.Errorf("%s: reconcile window started on row %d", where(), c.Row)

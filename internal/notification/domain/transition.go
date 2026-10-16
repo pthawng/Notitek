@@ -57,6 +57,10 @@ const (
 	// EventReconcileDeadline: the 24-hour reconcile window of an UNKNOWN
 	// delivery ended (row 18).
 	EventReconcileDeadline EventKind = "RECONCILE_DEADLINE"
+	// EventFallbackNotNeeded: the fallback never ran and never will, because
+	// an earlier delivery of its group settled without a definite rejection
+	// (row 20). Sent for each delivery a Change with SkipFallback names.
+	EventFallbackNotNeeded EventKind = "FALLBACK_NOT_NEEDED"
 )
 
 // Event is one input of Transition.
@@ -111,6 +115,15 @@ type Change struct {
 	// group that has not run yet, as the pinned policy orders them, for
 	// example SMS after ZNS. Never all alternatives at once (row 9 only).
 	ActivateFallback bool
+	// SkipFallback: in a FALLBACK group, close every fallback delivery that
+	// has not run yet with EventFallbackNotNeeded. Set when an ALTERNATIVE
+	// delivery stops being active for any reason other than a definite
+	// rejection (which activates the fallback instead) or a cancel (which
+	// cancels its siblings itself): it was accepted, became UNKNOWN, expired,
+	// was suppressed or ran out of retries. Without it the fallback would stay
+	// PENDING and the request would never close. Ignore it in PARALLEL groups,
+	// where every alternative runs on its own.
+	SkipFallback bool
 	// StartReconcileWindow: set reconcile_until once, to the end of the
 	// attempt plus 24 hours (row 10).
 	StartReconcileWindow bool
@@ -127,9 +140,9 @@ func (c Change) BumpsRevision() bool { return c.StateChanged() || c.StartAttempt
 
 // Transition applies an event to a delivery according to the R1 transition
 // matrix (ADR-04; §4.4 of the data model v0.8, kept in "DATABASE v0.8
-// (LỊCH SỬ)"). It is pure: the caller has done
-// the checks that need I/O (deadline, kill-switch, quota, retry policy) and
-// passes their result in the event.
+// (LỊCH SỬ)"), rows 1 to 20. It is pure: the caller has done the checks that
+// need I/O (deadline, kill-switch, quota, retry policy) and passes their
+// result in the event.
 //
 // Rows 1 to 4 apply to a delivery that waits for work: PENDING, or
 // PROCESSING with no attempt in flight (waiting to retry). A retry is claimed
@@ -227,9 +240,19 @@ func Transition(d Delivery, e Event) (Change, error) {
 		// through rows 11 to 13.
 		c.Row = 18
 
+	case EventFallbackNotNeeded:
+		// Only a fallback that never ran: PENDING, in an ALTERNATIVE group.
+		if d.State != StatePending || d.Requirement != Alternative {
+			return invalid(d, e)
+		}
+		c.Row, c.To, c.Reason = 20, StateSuppressed, ReasonFallbackNotNeeded
+
 	default:
 		return invalid(d, e)
 	}
+
+	c.SkipFallback = d.Requirement == Alternative && d.State.Active() && !c.To.Active() &&
+		c.Row != 3 && c.Row != 9 && c.Row != 20
 	return c, nil
 }
 

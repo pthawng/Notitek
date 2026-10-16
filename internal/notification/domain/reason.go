@@ -15,6 +15,10 @@ const (
 	ReasonRecipientUnresolved Reason = "RECIPIENT_UNRESOLVED"
 	ReasonRecipientLimit      Reason = "RECIPIENT_LIMIT_EXCEEDED"
 	ReasonNoValidRecipient    Reason = "NO_VALID_RECIPIENT"
+	// ReasonFallbackNotNeeded: a fallback the policy never reached, because
+	// an earlier delivery of its group settled without a definite rejection.
+	// Not a send check: only EventFallbackNotNeeded sets it.
+	ReasonFallbackNotNeeded Reason = "FALLBACK_NOT_NEEDED"
 )
 
 // Reasons of FAILED deliveries.

@@ -264,8 +264,18 @@ Mọi chuyển trạng thái là câu `UPDATE` có điều kiện trên trạng 
 | 17 | Bất kỳ trạng thái đã có bằng chứng | Bằng chứng yếu hơn mức hiện có (ví dụ `PROVIDER_ACCEPTED` đến sau `DELIVERED`) | | Giữ nguyên | Bằng chứng đánh `SUPERSEDED` |
 | 18 | `UNKNOWN` quá `reconcile_until` | Scheduler đóng | | `UNKNOWN` | Vẫn `UNKNOWN`, không tự đổi; yêu cầu có thể `CLOSED` với `RECONCILE_TIMEOUT`. Callback sau đó vẫn áp dụng theo dòng 11 đến 13 |
 | 19 | `FAILED`, `CANCELLED`, `EXPIRED`, `SUPPRESSED` | Callback nhận được | | Giữ nguyên | Lưu làm bằng chứng; ngoại lệ là dòng 13 |
+| 20 | `PENDING` (delivery dự phòng chưa từng chạy, nhóm `ALTERNATIVE` gửi tuần tự) | Delivery trước trong nhóm đã dừng **không** do từ chối chắc chắn: được nhận, `UNKNOWN`, hết retry, hết hạn, bị chặn | | `SUPPRESSED` | **Thêm 16/10/2026 (DEC 2.17).** Reason `FALLBACK_NOT_NEEDED`; `revision` tăng. Không còn delivery treo ở `PENDING` nên yêu cầu đóng được. Hủy không đi dòng này: lệnh hủy tự hủy các delivery cùng yêu cầu (dòng 3). Nhóm gửi song song không áp dụng |
 
 Hệ quả cho Email lời mời: bounce cứng (dòng 15) làm outcome xuống `FAILED`, nên User biết lời mời chưa tới và có thể cấp lại link.
+
+Hệ quả cho người nhận hàng (ZNS chính, SMS dự phòng): ZNS được nhận thì SMS thành `SUPPRESSED`/`FALLBACK_NOT_NEEDED` và outcome `ACHIEVED`; ZNS `UNKNOWN` thì SMS cũng đóng như vậy và outcome `UNKNOWN`, không gửi SMS vì có thể trùng.
+
+**Làm rõ khi hiện thực trong code** (`internal/notification/domain/transition.go`, test từng dòng ở `transition_test.go`):
+
+- "Chờ retry" là `PROCESSING` không có attempt `STARTED`. Dòng 1 đến 4 áp dụng cho cả trạng thái này, nên lần retry cũng được claim và kiểm tra kill-switch, chặn liên hệ, hạn mức như lần đầu.
+- Dòng 19: bằng chứng tiêu cực đến delivery đã dừng đánh `SUPERSEDED` (lặp điều đã biết); bằng chứng tích cực (`ACCEPTED`, `DELIVERED`) đánh `CONFLICT` để vận hành đối chiếu.
+- Dòng 15 chỉ nhận `BOUNCE_HARD` hoặc `DELIVERY_FAILED`; Adapter ánh xạ thất bại sau khi provider nhận về một trong hai mã này.
+- Bằng chứng đến delivery `PENDING`/`PROCESSING` hoặc kênh `IN_APP`, và mọi sự kiện attempt trên `IN_APP`, bị từ chối: không có attempt đã kết thúc để khớp.
 
 ### 4.5 Danh sách đóng `reason_code`
 
@@ -273,7 +283,7 @@ Lưu dạng văn bản (nguyên tắc 9); danh sách này chuyển thành enum t
 
 | Trạng thái | Mã |
 |---|---|
-| `SUPPRESSED` | `CONTACT_BLOCKED`, `RECIPIENT_UNRESOLVED`, `RECIPIENT_LIMIT_EXCEEDED`, `NO_VALID_RECIPIENT`, `BLOCKED_QUOTA`, `RATE_LIMITED`, `KILL_SWITCH`, `CHANNEL_NOT_ALLOWED` |
+| `SUPPRESSED` | `CONTACT_BLOCKED`, `RECIPIENT_UNRESOLVED`, `RECIPIENT_LIMIT_EXCEEDED`, `NO_VALID_RECIPIENT`, `BLOCKED_QUOTA`, `RATE_LIMITED`, `KILL_SWITCH`, `CHANNEL_NOT_ALLOWED`, `FALLBACK_NOT_NEEDED` (chỉ dòng 20, không phải kết quả kiểm tra gửi) |
 | `FAILED` | `PROVIDER_REJECTED`, `INVALID_DESTINATION`, `TEMPLATE_REJECTED`, `RETRY_EXHAUSTED`, `BOUNCE_HARD`, `DELIVERY_FAILED` |
 | `EXPIRED` | `DEADLINE_PASSED` |
 | `UNKNOWN` | `PROVIDER_TIMEOUT`, `WORKER_LOST` |
