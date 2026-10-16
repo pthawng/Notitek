@@ -1,6 +1,6 @@
 # Hộp tin, SSE và đăng ký Push — hợp đồng nháp v1
 
-Ngày 11/10/2026. Trạng thái: **Bản nháp hợp đồng, chưa triển khai**. Chủ hợp đồng: Notitek. Căn cứ: DEC-01, DEC-02 (danh sách endpoint), DEC-03, DEC-06, DEC-09, DEC-12 bản 1.6; giải quyết C1 và C2. Quy ước chung (envelope, snake_case, `X-Correlation-Id`) theo [API chung](README.md).
+Ngày 13/10/2026. Trạng thái: **Bản nháp hợp đồng, chưa triển khai**. Chủ hợp đồng: Notitek. Căn cứ: DEC-01, DEC-02 (danh sách endpoint), DEC-03, DEC-06, DEC-09, DEC-12 bản 1.9, gồm DB01–DB03/DB06; giải quyết C1 và C2. Quy ước chung (envelope, snake_case, `X-Correlation-Id`) theo [API chung](README.md).
 
 ## 1. Phạm vi và chủ thể
 
@@ -34,7 +34,8 @@ Router khớp các sub-path cố định `inbox`, `push-subscriptions`, `cancel`
 - **Kiểm tra quyền lúc đọc, không chỉ lúc gửi.** Bản tin Shop yêu cầu quyền `notification.order_alert.receive` hiện tại trên Shop đó; bản tin vận hành yêu cầu `notification.order_ops_alert.receive` và data scope vẫn bao phủ Shop của đơn. Thành viên đã rời Shop hoặc bị gỡ quyền không thấy bản tin của Shop, kể cả bản đã nhận trước đó.
 - Danh sách mặc định gồm bản ACCOUNT của identity, bản WORKSPACE của organization hiện tại và bản tin vận hành đạt điều kiện ở trên. Query `scope=ACCOUNT|WORKSPACE` lọc thêm, không mở rộng.
 - `inbox_item_id` không thuộc người gọi hoặc ngoài phạm vi trả 404, không lộ sự tồn tại.
-- Thời gian theo DEC-09: hiển thị 90 ngày, xóa sau 180 ngày.
+- Theo DEC-09 và DB01–DB03: hiển thị/title/preview tối đa 90 ngày từ created_at của inbox; sau đó làm NULL nội dung. Metadata/ID/trạng thái đọc xóa cùng request, tính từ accepted_at của request, giữ 180 ngày đến 180 ngày + 1 tháng. Không cộng thêm 180 ngày riêng từ lúc tạo inbox.
+- Mọi API danh sách, số chưa đọc, đọc chi tiết và đánh dấu đọc dùng cùng điều kiện còn hiển thị; tin hết 90 ngày không được trả nội dung hay dựng lại từ dữ liệu lưu trữ. Truy cập trực tiếp tin đã hết thời gian hiển thị trả 404 như tin không thuộc phạm vi.
 
 Người dùng internal-fe có quyền vận hành thấy bản tin `ORDER_OPS_ALERT_RECEIVERS` theo quy tắc bản tin vận hành ở trên, trong ngữ cảnh tổ chức nội bộ; không cần chọn Shop. Bị gỡ quyền hoặc data scope thu hẹp thì bản tin của Shop ngoài phạm vi biến mất khỏi danh sách và số chưa đọc.
 
@@ -108,7 +109,7 @@ Identity, `application_id` và client lấy từ Access Context. Phản hồi 20
 - **Không hoạt động 60 ngày** thì loại đích.
 - FCM trả `UNREGISTERED` hoặc `INVALID_ARGUMENT` cho token thì vô hiệu ngay và không dùng lại; đăng ký lại phải qua POST mới.
 - Mỗi identity–app tối đa 10 đích; vượt thì thay đích cũ nhất.
-- Push **không bao giờ là kênh bắt buộc**; Shop chỉ được tắt Push (DEC-07). Nội dung Push không chứa bí mật, liên hệ đầy đủ hay token.
+- Push **không bao giờ là kênh bắt buộc**; Shop chỉ được tắt Push (DEC-07); R1 Vận hành Notification đổi ghi đè qua API vận hành với notification.shop_channel.manage (DB06), không dùng quyền đăng ký đích Push để thay thế. Nội dung Push không chứa bí mật, liên hệ đầy đủ hay token.
 
 ## 9. HTTP và mã lỗi
 

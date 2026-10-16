@@ -9,10 +9,9 @@ policies/     kênh bắt buộc/tùy chọn/thay thế, retry, khung giờ, ti�
 templates/vi/<kênh>/             nội dung theo type và kênh
 audiences.yaml                   selector được phép và quyền tương ứng
 sources.yaml                     client → source, type/application/brand được phép
-channels.yaml                    định tuyến provider, sender/OA/domain theo brand
 overrides/{application,brand,organization}/   ba cấp Global → App/Brand → Shop
 ```
 
-Kill-switch không nằm ở đây: đó là trạng thái runtime trong DB, đổi qua API vận hành có audit. Secret (khóa provider, khóa HMAC) không bao giờ nằm trong thư mục này.
+Dữ liệu vận hành không nằm ở đây mà ở DB, đổi qua API vận hành có audit và không cần deploy (DEC-07 v1.7): kết nối kênh (provider, sender/OA/domain, credential), kill-switch, hạn mức ngày, bật/tắt Push của Shop. Secret (khóa gốc, khóa HMAC) không bao giờ nằm trong thư mục này.
 
 Định dạng chi tiết được chốt khi hiện thực module `internal/registry`; 17 profile R1 hiện được mô tả trong [`docs/api/openapi.json`](../../docs/api/openapi.json) và sẽ được chuyển sang đây, sau đó OpenAPI sinh `x-type-profiles` từ registry.

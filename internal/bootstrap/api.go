@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/pthawng/notitek/internal/platform/apperr"
 	"github.com/pthawng/notitek/internal/platform/httpx"
 )
 
@@ -21,15 +20,17 @@ func assembleAPI(cfg Config, _ *Dependencies, logger *slog.Logger) ([]Component,
 	// /v1/notifications/{notification_id}; net/http picks the most specific
 	// pattern, which preserves that precedence.
 
-	// Unmatched paths answer with the standard error envelope.
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		httpx.WriteError(w, r, logger, apperr.New(apperr.NotFound, "Không tìm thấy tài nguyên."))
-	})
+	// Unmatched paths and methods answer with the standard error envelope
+	// (404, or 405 with Allow).
+	httpx.RegisterFallback(mux, logger)
 
+	// Order matters: Correlation first so every log line and error carries the
+	// id; AccessLog outside Recover so a panic is logged as the 500 it becomes.
 	handler := httpx.Chain(mux,
 		httpx.Correlation(),
-		httpx.Recover(logger),
 		httpx.AccessLog(logger),
+		httpx.Recover(logger),
+		httpx.SecurityHeaders(),
 		httpx.NoStore(),
 		httpx.MaxBody(maxRequestBody),
 	)

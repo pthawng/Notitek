@@ -53,13 +53,16 @@ const (
 	Optional Requirement = "OPTIONAL"
 )
 
-// Delivery is the part of a delivery the outcome depends on.
+// Delivery is the part of a delivery the outcome and the transitions depend on.
 type Delivery struct {
 	ID               string
 	Channel          Channel
 	Requirement      Requirement
 	RequirementGroup string
 	State            DeliveryState
+	// AttemptInFlight is true while an attempt is STARTED: the request may be
+	// at the provider. A PROCESSING delivery without one is waiting to retry.
+	AttemptInFlight bool
 }
 
 // Achieved reports whether the delivery reached the evidence threshold of its

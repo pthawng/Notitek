@@ -37,7 +37,7 @@ Các phần này là trách nhiệm logic, không bắt buộc trở thành các
 |---|---|---|
 | ADR-01 | **Đã chốt (PO, 09/10/2026): tự xây lõi điều phối bằng Go**; kênh mở rộng qua Adapter/Strategy. Không dùng Novu hay giải pháp điều phối có sẵn. | Lý do: stack đã chốt (Go, RabbitMQ, PostgreSQL), hợp đồng OTP đồng bộ và Access Context của SuperPlatform. Tech Lead vẫn viết ADR chính thức ghi phương án đã cân nhắc. |
 | ADR-02 | Phương thức nhận lệnh và phát/nhận event bền vững | **R1 đã chốt (PO, 11/10/2026, A2):** mọi nguồn gọi REST `/v1/notifications`; thông báo async đi từ outbox của nguồn qua dispatcher của nguồn, retry nguyên body cùng reference. Phần còn lại của ADR (chọn broker liên module, ánh xạ event → profile) hoãn đến phân kỳ sau. |
-| ADR-03 | Cách lưu và bảo vệ dữ liệu, gồm bí mật tạm thời | DEC-09, thời gian xử lý/thử lại, yêu cầu tra cứu, audit và xóa. |
+| ADR-03 | Cách lưu và bảo vệ dữ liệu, gồm bí mật tạm thời và credential kết nối kênh | DEC-09, thời gian xử lý/thử lại, yêu cầu tra cứu, audit và xóa. PO đã chốt (DEC-07 v1.7, 12/10/2026): kết nối kênh lưu ở DB, credential mã hóa envelope trong DB, khóa gốc nạp một lần khi triển khai qua secret manager. Tech Lead viết ADR chi tiết: thuật toán, `key_id`, xoay khóa, quyền giải mã. |
 | ADR-04 | Mô hình kết quả, chuyển trạng thái và tổng hợp | DEC-10, callback trễ/trùng/xung đột, kết quả một phần, In-app và đọc. |
 | ADR-05 | Cách nhận/tra và thu hồi đích Push | Chủ sở hữu thiết bị, client được chọn, đổi chủ thiết bị và phản hồi token lỗi. |
 | ADR-06 | Cách kiểm tra quyền/ngữ cảnh tương tác và xử lý nền | Hợp đồng User/Authorization; không dùng token người tạo thay quyền tập nhận. |

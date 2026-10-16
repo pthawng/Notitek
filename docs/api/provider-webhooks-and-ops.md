@@ -1,6 +1,6 @@
 # Callback nhà cung cấp và API tra cứu vận hành — hợp đồng nháp v1
 
-Ngày 11/10/2026. Trạng thái: **Bản nháp hợp đồng, chưa triển khai**. Chủ hợp đồng: Notitek. Căn cứ: DEC-02, DEC-09, DEC-10, DEC-12 bản 1.6; giải quyết C3 và C5. Quy ước chung theo [API chung](README.md).
+Ngày 13/10/2026. Trạng thái: **Bản nháp hợp đồng, chưa triển khai**. Chủ hợp đồng: Notitek. Căn cứ: DEC-02, DEC-09, DEC-10, DEC-12 bản 1.9, gồm DB01/DB03/DB06; giải quyết C3 và C5. Quy ước chung theo [API chung](README.md).
 
 ## Phần A — Callback nhà cung cấp (C3)
 
@@ -78,10 +78,10 @@ Mã cụ thể của Email và SMS bổ sung sau khi chọn nhà cung cấp.
 | `source_ref` | Tra đúng một yêu cầu |
 | `recipient` | SĐT/email đầy đủ; server chuẩn hóa rồi so bằng HMAC, không lưu hay log giá trị tìm kiếm; kết quả vẫn che |
 | `organization_id` | Lọc theo Shop/tổ chức |
-| `created_from`, `created_to` | Bắt buộc, tối đa 31 ngày mỗi lần, trong 180 ngày lưu |
+| `created_from`, `created_to` | Bắt buộc, tối đa 31 ngày mỗi lần, trong cửa sổ metadata 180 ngày đến 180 ngày + 1 tháng theo DB01 |
 | `page_size`, `cursor` | Mặc định 20, tối đa 50; meta `page_size`, `has_next`, `next_cursor` |
 
-p95 ≤ 1s trên dữ liệu 180 ngày (DEC-06, SRS-P10). Bộ lọc bắt buộc khoảng thời gian để giữ mục tiêu này.
+p95 ≤ 1s trên dữ liệu còn giữ theo DEC-09/DB01 (DEC-06, SRS-P10). Bộ lọc bắt buộc khoảng thời gian để giữ mục tiêu này.
 
 ### B4. Quy tắc
 
@@ -90,6 +90,21 @@ p95 ≤ 1s trên dữ liệu 180 ngày (DEC-06, SRS-P10). Bộ lọc bắt buộ
 - **Gửi lại** chỉ áp dụng cho delivery `FAILED` hoặc `EXPIRED`, còn trong hạn nghiệp vụ nguồn và không phải OTP; dùng lại bí mật đã lưu nếu còn TTL, lời mời/kích hoạt hết TTL thì xin link mới qua API cấp lại link của User (CF-10). Không gửi lại delivery `UNKNOWN` nếu chưa có bằng chứng chưa gửi.
 - Hủy và gửi lại có idempotency theo `(identity vận hành, Idempotency-Key)`; replay trả receipt ban đầu.
 - Quyết định quyền khác `ALLOW` đều từ chối; ID ngoài quyền trả 404.
+
+### B4.1. Quyền thay đổi dữ liệu vận hành (DB06)
+
+PO chốt phân quyền ngày 13/10/2026; quyền quản lý kết nối không dùng chung cho mọi thao tác.
+
+| Hành động | Quyền | Gán mặc định |
+|---|---|---|
+| Tạo/sửa/thử/kích hoạt/thu hồi kết nối | `notification.connection.manage` | Platform admin |
+| Sửa hạn mức ngày theo ngân sách được giao | `notification.quota.manage` | Platform admin |
+| Dừng/bật gửi theo loại và kênh | `notification.pause.manage` | Vận hành Notification |
+| Bật/tắt Push tùy chọn của Shop | `notification.shop_channel.manage` | Vận hành Notification |
+
+Phải kiểm tra ALLOW đúng hành động và tài nguyên/phạm vi (cost center/loại/kênh, phạm vi dừng, hoặc Organization Shop). Mọi thay đổi ghi audit; quyền sửa quota không thay quyết định mức/cost center của chủ ngân sách CF-02. User/Authorization đăng ký quyền và resource type theo CF-07; endpoint/schema thao tác cụ thể do Tech Lead hoàn thiện.
+
+Tra cứu chỉ trả nội dung còn trong thời hạn riêng. Sau 90 ngày từ created_at, title/preview inbox đã NULL; metadata vẫn tra theo DB01/DB02, không dựng lại nội dung đã dọn.
 
 ### B5. Câu hỏi mở
 

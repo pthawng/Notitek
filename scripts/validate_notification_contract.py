@@ -131,7 +131,7 @@ def main():
         'reason_code': 'SOURCE_RESOLVED', 'cancel_group': 'failure-demo',
         'context': requests['order-delivery-failed']['context'],
     })
-    print(f'PASS: OpenAPI, {len(requests)} request examples, 4 response examples, {len(cases)} negative cases, 2 cancel bodies; canonical route /v1/notifications')
+    print(f'PASS: OpenAPI, {len(requests)} request examples, {len(list((API / "examples").glob("*.response.json")))} response examples, {len(cases)} negative cases, 2 cancel bodies; canonical route /v1/notifications')
     print('Runtime authorization, timing, UTF-8 byte limits, concurrency and providers are not tested.')
 
 

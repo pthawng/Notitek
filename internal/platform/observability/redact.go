@@ -2,6 +2,8 @@ package observability
 
 import (
 	"log/slog"
+	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -54,4 +56,28 @@ func keepLast(s string, n int) string {
 		return strings.Repeat("*", len(s))
 	}
 	return strings.Repeat("*", len(s)-n) + s[len(s)-n:]
+}
+
+var dsnPassword = regexp.MustCompile(`(?i)(password\s*=\s*)('[^']*'|\S+)`)
+
+// RedactDSN hides the password of a connection string, in URL form
+// (scheme://user:password@host) or keyword form (password=...). A value that
+// cannot be parsed is replaced entirely, so it is always safe to log.
+func RedactDSN(dsn string) string {
+	if dsn == "" {
+		return ""
+	}
+	if strings.Contains(dsn, "://") {
+		u, err := url.Parse(dsn)
+		if err != nil {
+			return redacted
+		}
+		if u.User != nil {
+			if _, ok := u.User.Password(); ok {
+				u.User = url.UserPassword(u.User.Username(), "xxxxx")
+			}
+		}
+		return u.String()
+	}
+	return dsnPassword.ReplaceAllString(dsn, "${1}xxxxx")
 }

@@ -1,0 +1,15 @@
+{
+  "error": true,
+  "message": "Vượt giới hạn tiếp nhận, vui lòng thử lại sau.",
+  "data": {
+    "type": "urn:supership:notitek:error:rate-limited",
+    "title": "Too many requests",
+    "status": 429,
+    "code": "RATE_LIMITED",
+    "instance": "/v1/notifications",
+    "trace_id": "trace-demo",
+    "retryable": true,
+    "retry_after_seconds": 2,
+    "details": []
+  }
+}
