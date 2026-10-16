@@ -2,6 +2,8 @@
 
 Ngày đánh giá: 09/10/2026. Đối tượng: **Mô hình dữ liệu logic và từ điển dữ liệu v0.3** trong workspace hiện tại.
 
+**Bổ sung 13/10/2026:** xem [tái đánh giá v0.6 đã hiệu chỉnh phạm vi](<Notitek - TÁI ĐÁNH GIÁ DATABASE v0.6.md>) để phân biệt lỗi nội tại Notification, phụ thuộc hợp đồng User/Order/provider và chi tiết triển khai. Các kiến nghị cũ về cấp lại link, version Push và quyết định chi không được hiểu là giao nghiệp vụ của hệ thống nguồn cho Notification. Bản tái đánh giá cũng điều chỉnh mức ưu tiên theo năng lực liên quan, không chặn toàn dự án vì một phụ thuộc tích hợp.
+
 **Cập nhật 12/10/2026:** đã đối chiếu 15 điểm với LDB v0.6 ở mục 1.1. Phần 2 và 3 bên dưới giữ nguyên nội dung đánh giá v0.3 làm lịch sử; tên trường, trạng thái và bảng trong đó là của v0.3 (ví dụ `source_system`, `flow_code`, `goal_status`, `FAILED_FINAL`, `fallback_of_delivery_id`, `RESULT_CHANGED`, `REF`), đã được đổi theo OpenAPI ở LDB v0.5. Muốn biết hiện trạng, đọc mục 1.1.
 
 ## 1. Kết luận và phạm vi

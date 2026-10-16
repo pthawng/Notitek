@@ -1,7 +1,7 @@
 # Notitek - ĐẶC TẢ YÊU CẦU PHẦN MỀM (SRS)
 
-**Phiên bản:** 1.4 — baseline nghiệp vụ sau PO review, kèm giá trị tham số PO đã chốt; loại bỏ phạm vi chuyển đổi hệ thống cũ; mở rộng phạm vi R1 theo DEC bản 1.6.
-**Ngày:** 11/10/2026.
+**Phiên bản:** 1.5 — baseline nghiệp vụ theo DEC v1.9; áp dụng DB01–DB06 đã chốt về retention, TTL liên hệ tạm, polling kết quả và tách quyền vận hành.
+**Ngày:** 13/10/2026.
 **Chủ trì:** PO/BA Notification; phối hợp User, Order, User/Authorization, chủ ứng dụng, vận hành và QA.
 **Trạng thái:** Đã PO review và chốt nội dung yêu cầu nghiệp vụ trong vai trò PO được giao. Giá trị định lượng và đầu ra tích hợp cần bên sở hữu xác nhận được quản lý riêng tại mục 11; chưa ghi nhận nghiệm thu phần mềm.
 
@@ -33,6 +33,7 @@ SRS này đặc tả hành vi phần mềm quan sát và kiểm chứng được
 | 1.2 | Ngày 09/10/2026, PO xác nhận không có hệ thống cũ: loại SRS-F22 và DEC-11, bỏ phần chuyển feed/ZNS cũ ở SRS-F10, SRS-F19, mục 7.4 và PO07. |
 | 1.3 | Ngày 11/10/2026, áp dụng A1–A8/B1 (DEC 1.4 mục 2.13): R1 thêm OTP qua Email, lời mời qua SMS và lời mời nhân viên, bốn thông báo tài khoản User, đủ 10 mốc Order và audience vận hành; Order gửi liên hệ người nhận; nguồn gọi REST từ dispatcher outbox, broker để sau; User cấp lại link. Cập nhật mục 2.1, 2.2, 7, 11.2, 12.1, SRS-F17.02 và SRS-PO02. |
 | 1.4 | Ngày 11/10/2026, đồng bộ DEC 1.6: truy vết ST-14 tới UC-USR-01 đến 07, ST-15 tới UC-ORD-01/03/05/06/09/12–16; thêm AT-38 đến AT-41 vào mục 12.1; mục 11.2 dẫn chiếu DEC mục 2.14–2.15. |
+| 1.5 | Ngày 13/10/2026, người yêu cầu chốt DB01–DB06 (DEC 1.9 mục 2.16): metadata 180 ngày đến 180 ngày + 1 tháng; metadata inbox theo accepted_at của request, nội dung/hiển thị 90 ngày theo created_at; selector liên hệ ≤ 24 giờ/hạn gửi; chỉ polling R1, không lưu sẵn event kết quả; tách quyền vận hành. Bổ sung SRS-F08.09, F12.07, F13.07 và N06.05; làm rõ SRS-F09.07/08 theo phạm vi R1. |
 
 ### 1.3. Các từ dùng trong tích hợp
 
@@ -302,6 +303,7 @@ Hợp đồng phải liệt kê lỗi có thể sửa, lỗi có thể retry và
 | SRS-F08.06 | Đã đọc không được đổi kết quả SMS/Push, hoàn tất đơn hoặc chấp nhận lời mời/yêu cầu thiết bị. Ghi đọc lỗi không được báo là đã lưu thành công. |
 | SRS-F08.07 | Khi đổi Shop/app/tài khoản hoặc đăng xuất, giao diện phải tách cache và bỏ dữ liệu của ngữ cảnh không còn hợp lệ. Tin tài khoản chỉ hiện trên app được chính sách cho phép, không mặc định mọi app đều xem được. |
 | SRS-F08.08 | Tin không có, bị ẩn/xóa hoặc mất quyền phải có phản hồi an toàn theo hợp đồng. UI phải phân biệt tải, trống và lỗi mà không tiết lộ sự tồn tại/nội dung của tin trái quyền. |
+| SRS-F08.09 | Theo DB02/DB03, In-app hiển thị và giữ title/preview tối đa 90 ngày từ created_at; sau đó làm NULL nội dung, không dựng lại từ lưu trữ. Metadata/ID/read_at xóa cùng request theo accepted_at, trong cửa sổ DB01. Danh sách/chi tiết/đếm chưa đọc/đánh dấu đọc cùng loại tin đã hết thời gian hiển thị. |
 
 **Kiểm chứng:** Danh sách và số chưa đọc cùng scope; đọc lặp không sai số; thiết bị khác tải được trạng thái đã lưu; mất membership không xem lại tin Shop dù biết ID; đổi tài khoản không thấy cache cũ.
 
@@ -318,8 +320,8 @@ Hợp đồng phải liệt kê lỗi có thể sửa, lỗi có thể retry và
 | SRS-F09.04 | Mỗi trường hợp gửi phải có tiêu chí đạt được cấu hình trước kích hoạt: kênh bắt buộc, kênh thay thế và mức bằng chứng. Mục tiêu đạt chỉ khi đủ tiêu chí; bị chặn/hủy/hết hạn không được tính là gửi thành công. |
 | SRS-F09.05 | Kết quả tổng hợp phải trả phần đạt, chưa đạt, bị chặn/hủy/hết hạn và chưa rõ. Một người hoặc một kênh thành công không được che phần bắt buộc chưa đạt. |
 | SRS-F09.06 | Callback đến muộn/sai thứ tự phải được đối chiếu với loại bằng chứng và chính sách xung đột. Phản hồi yếu hơn không làm mất bằng chứng mạnh đã xác nhận; bằng chứng trái nhau phải có trạng thái đối chiếu/lý do, không ghi đè im lặng. |
-| SRS-F09.07 | Hệ thống phải cung cấp tra cứu và phát kết quả theo hợp đồng cho consumer được phép; phát lại kết quả có cùng ID thay đổi. Lỗi phát kết quả không được kích hoạt gửi lại tin cho người nhận. |
-| SRS-F09.08 | Kết quả phải có định danh nguồn/Notification, mức áp dụng, thời điểm và lý do phù hợp; event kết quả không chứa OTP/token, payload bí mật hoặc liên hệ đầy đủ. |
+| SRS-F09.07 | R1 theo DB05 cung cấp GET cho consumer được phép, polling theo revision; mỗi thay đổi quan sát được tăng revision/updated_at trong cùng transaction, không ghi/phát event kết quả ở outbox. Khi làm phân kỳ broker, định nghĩa event/redelivery theo hợp đồng riêng; lỗi phát kết quả không kích hoạt gửi lại tin cho người nhận. |
+| SRS-F09.08 | Kết quả tra cứu phải có định danh nguồn/Notification, mức áp dụng, thời điểm và lý do phù hợp. Khi thiết kế event kết quả ở phân kỳ broker, event không chứa OTP/token, payload bí mật hoặc liên hệ đầy đủ; R1 không tạo event này. |
 
 **Kiểm chứng:** Một Shop có In-app nhưng Push lỗi hiện đủ hai kết quả; chỉ một trong hai người nhận đạt không báo cả yêu cầu hoàn tất; callback cũ không đảo bằng chứng; consumer mất kết nối chỉ nhận lại kết quả.
 
@@ -369,6 +371,7 @@ Hợp đồng phải liệt kê lỗi có thể sửa, lỗi có thể retry và
 | SRS-F12.04 | Tin chờ phải giữ được phiên bản đã chọn hoặc áp phiên bản mới theo chính sách chuyển đổi được duyệt. Dù giữ mẫu cũ, quyền, đích, hạn gửi và điều kiện dừng hiện hành vẫn phải kiểm tra lại. |
 | SRS-F12.05 | Cấu hình app/client phải tham chiếu User; brand/định danh gửi và môi trường provider được ánh xạ riêng. Không tạo app hoặc cấp entitlement qua kích hoạt luồng. |
 | SRS-F12.06 | Đợt đầu có thể quản trị qua công cụ cấu hình được kiểm soát thay vì màn hình đầy đủ; vẫn phải có quyền, kiểm tra hợp lệ, phiên bản, phê duyệt và audit. |
+| SRS-F12.07 | Theo DB06, Platform admin sửa kết nối với notification.connection.manage và hạn mức với notification.quota.manage; Vận hành Notification dừng/bật gửi với notification.pause.manage và đổi Push của Shop với notification.shop_channel.manage. Kiểm tra hành động/tài nguyên riêng và ghi audit, không dùng chung quyền sửa kết nối cho mọi thao tác. |
 
 **Kiểm chứng:** Không bật luồng thiếu tiêu chí đạt hoặc template; thay mẫu không sửa lịch sử; chính sách khóa không bị ghi đè bởi brand; tra được config thực tế dùng trước và sau thay đổi.
 
@@ -385,6 +388,7 @@ Hợp đồng phải liệt kê lỗi có thể sửa, lỗi có thể retry và
 | SRS-F13.04 | Liên hệ, số tiền và nội dung riêng tư phải che theo quyền và mục đích xem; việc có quyền tra lỗi không tự cho phép xem toàn nội dung người nhận. |
 | SRS-F13.05 | Link mang token được coi là bí mật; bản hiển thị hỗ trợ và preview không chứa token. Thông tin cần cho người nhận chỉ đưa qua kênh được chính sách cho phép. |
 | SRS-F13.06 | Mock/test phải có nhãn và cấu hình riêng; production không được dùng phản hồi mock/log để chứng minh gửi thật. Thử nghiệm không được tự sử dụng tập đích production. |
+| SRS-F13.07 | Theo DB04, phone/email tạm trong selector xóa khi PLAN xong hoặc request đóng; dù xử lý kẹt không giữ quá min(accepted_at + 24 giờ, send_deadline). TTL dọn chạy độc lập và áp dụng lại khi restore; không tự phục hồi liên hệ đã hết hạn từ payload/log. Liên hệ đã chuyển sang delivery giữ theo hạn riêng DEC-09. |
 
 **Kiểm chứng:** QA dùng mã/token giả có dấu nhận biết và tìm trên toàn bộ đường quan sát, hàng lỗi, API hỗ trợ; không có bản nguyên văn. Kiểm tra cả exception và lỗi provider, không chỉ log đường thành công.
 
@@ -717,8 +721,9 @@ Các yêu cầu định tính dưới đây bắt buộc trong đợt đầu. M�
 | SRS-N06.02 | Xóa/ẩn phải theo quyền và chính sách; có bằng chứng thực hiện và ảnh hưởng backup/restore rõ ràng. Không khôi phục dữ liệu đã xóa trái chính sách qua bản sao cũ. |
 | SRS-N06.03 | Audit và metadata cần tra cứu phải giữ liên kết đủ dùng trong cửa sổ được duyệt mà không giữ bí mật nguyên văn; quyền xuất dữ liệu phải tách với quyền xem. |
 | SRS-N06.04 | Tra cứu vận hành và tải hộp tin phải được đo theo khối lượng dữ liệu/lịch sử được duyệt; lỗi tra cứu không được suy thành gửi thất bại. |
+| SRS-N06.05 | Theo DB01, metadata request và bản con xóa cùng cây theo accepted_at sau tối thiểu 180 ngày và tối đa 180 ngày + 1 tháng. Evidence UNMATCHED dùng received_at, khi khớp theo request. Partition không kéo TTL bí mật/nội dung/liên hệ. Inbox áp dụng mốc và dọn nội dung DB02/DB03. |
 
-**Cách kiểm chứng:** Kiểm tra đến hạn lưu/xóa, truy vết sau xóa bí mật, backup/restore và truy vấn trên dữ liệu chuẩn. Tham số SRS-P09/10; DEC-09.
+**Cách kiểm chứng:** Kiểm tra mốc 24 giờ/hạn gửi khi PLAN kẹt; inbox title/preview làm NULL ở 90 ngày; accepted_at và created_at khác ngày vẫn xóa cùng cây request; metadata có thể còn ở ngày 190 nhưng không quá 180 ngày + 1 tháng; backup/restore không hồi sinh dữ liệu hết hạn. Tham số SRS-P09/10; DEC-09 và DB01–DB04.
 
 ### 10.7. SRS-N07 — Tương thích và khả năng tích hợp module mới
 

@@ -1,6 +1,6 @@
 # Yêu cầu tích hợp Notitek cho module User
 
-Ngày 11/10/2026. Trạng thái: **Bản nháp gửi đội User** (Tech Lead User, User/Authorization, FE nội bộ). Căn cứ: [DEC 1.6](<../Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>) mục 2.13–2.15, [hợp đồng API v1](README.md), [OpenAPI](openapi.json). PO đã duyệt hướng xử lý B2–B11, C6, C7 và D ngày 11/10/2026. Tài liệu liệt kê việc đội User cần làm trong repo `user-spf`; Notitek không sửa repo này.
+Ngày 13/10/2026. Trạng thái: **Bản nháp gửi đội User** (Tech Lead User, User/Authorization, FE nội bộ). Căn cứ: [DEC 1.9](<../Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>) mục 2.13–2.15, [hợp đồng API v1](README.md), [OpenAPI](openapi.json). PO đã duyệt hướng xử lý B2–B11, C6, C7 và D ngày 11/10/2026. Tài liệu liệt kê việc đội User cần làm trong repo `user-spf`; Notitek không sửa repo này.
 
 ## 1. Tổng hợp
 
@@ -12,7 +12,7 @@ Ngày 11/10/2026. Trạng thái: **Bản nháp gửi đội User** (Tech Lead Us
 | U-04 (B4) | `source_ref` tất định và outbox thông báo | users-core | CF-03 | 22/10/2026 |
 | U-05 (B8) | `occurred_at` có offset từ thời điểm nghiệp vụ | users-core | CF-03 | 15/10/2026 |
 | U-06 (B11) | Trả `delivery_status` cho internal-fe | users-core, FE nội bộ | — | 22/10/2026 |
-| U-07 (B9) | Đăng ký 9 quyền và resource type | User/Authorization | CF-07 | **15/10/2026** (kéo từ 22/10) |
+| U-07 (B9) | Đăng ký catalog quyền DEC-12 và resource type theo DB06 | User/Authorization | CF-07 | **15/10/2026** (kéo từ 22/10) |
 | U-08 | OAuth2 client credentials cho service | User/Authorization | CF-09 | 15/10/2026 |
 | U-09 (C6) | API resolve người nhận cho Notitek | User/Authorization | **CF-11** (mới) | 15/10/2026 |
 | U-10 (C7) | API cấp lại link lời mời/kích hoạt | users-core | CF-10 | 22/10/2026 |
@@ -111,7 +111,7 @@ Ngày 11/10/2026. Trạng thái: **Bản nháp gửi đội User** (Tech Lead Us
 
 ### U-07 (B9, CF-07) — Quyền và resource type
 
-**Yêu cầu:** đăng ký 9 quyền DEC-12, gồm `notification.order_alert.receive` và `notification.order_ops_alert.receive`, cùng resource type tương ứng trong `authorization.resource_types`; gán mặc định theo DEC-12. Bài học từ lỗi `INVALID_ACTION_RESOURCE` (thiếu resource type `ORDER`): migration phải đăng ký resource type trước quyền.
+**Yêu cầu:** đăng ký đủ catalog DEC-12 hiện hành, gồm notification.order_alert.receive, notification.order_ops_alert.receive và 3 quyền vận hành bổ sung notification.quota.manage, notification.pause.manage, notification.shop_channel.manage; resource type tương ứng trong authorization.resource_types; gán mặc định theo DB06 đã chốt ngày 13/10/2026. Platform admin sửa kết nối/hạn mức; Vận hành Notification dừng/bật gửi và đổi Push của Shop. connection.manage không tự cho phép ba hành động mới. Bài học từ lỗi `INVALID_ACTION_RESOURCE` (thiếu resource type `ORDER`): migration phải đăng ký resource type trước quyền.
 
 **Kiểm tra:** kiểm tra quyền trên Shop thử trả `ALLOW` cho Chủ Shop/CSKH; không trả `INVALID_ACTION_RESOURCE`.
 

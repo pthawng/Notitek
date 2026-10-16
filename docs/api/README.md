@@ -1,6 +1,6 @@
 # API chung của Notitek — hợp đồng đề xuất v1
 
-Ngày 11/10/2026. Trạng thái: thiết kế để triển khai và review tích hợp, chưa phải API đã chạy. Chủ hợp đồng: Notitek. Baseline: SRS 1.2 và DEC-01 đến DEC-12 đang hiệu lực. Endpoint chung `/v1/notifications` theo DEC-02. Các quyết định PO ngày 11/10/2026 (DEC bản 1.6, mục 2.13–2.15) đã áp dụng: R1 gọi REST, broker để sau; OAuth2 client credentials; trường JSON snake_case và header `X-Correlation-Id`; context `organization_id` + `application_id`; Order gửi liên hệ người nhận (bắt buộc ở mốc giao thất bại); 10 mốc Order và 4 thông báo tài khoản User thuộc R1; audience vận hành; User cấp lại link qua API.
+Ngày 13/10/2026. Trạng thái: thiết kế để triển khai và review tích hợp, chưa phải API đã chạy. Chủ hợp đồng: Notitek. Baseline: SRS 1.5 và DEC v1.9; áp dụng DB01–DB06 ngày 13/10/2026. Endpoint chung `/v1/notifications` theo DEC-02. Các quyết định PO ngày 11/10/2026 (DEC bản 1.6, mục 2.13–2.15) đã áp dụng: R1 gọi REST, broker để sau; OAuth2 client credentials; trường JSON snake_case và header `X-Correlation-Id`; context `organization_id` + `application_id`; Order gửi liên hệ người nhận (bắt buộc ở mốc giao thất bại); 10 mốc Order và 4 thông báo tài khoản User thuộc R1; audience vận hành; User cấp lại link qua API.
 
 ## 1. Một hợp đồng cho các module
 
@@ -170,7 +170,7 @@ So sánh toàn bộ body đã parse theo JCS, gồm secrets, recipient order, de
 - Khác body: 409 `IDEMPOTENCY_CONFLICT`, không trả giá trị cũ/mới chứa bí mật.
 - Sync đang chạy: 409 `IDEMPOTENCY_IN_PROGRESS`, Retry-After; caller tra GET, không tạo reference mới để vượt khóa.
 - Kiểm tra quyền và giới hạn tài nguyên đầu vào trước lookup; sau lookup mới xét thời hạn cho **yêu cầu mới**. Replay hợp lệ vẫn tra được khi deadline đã qua.
-- Chống trùng được bảo đảm 7 ngày từ accepted; metadata còn 180 ngày. Nếu còn metadata nhưng hết khóa, trả 409 `REFERENCE_RETIRED`, không tự gửi lại. Không được tái sử dụng reference.
+- Chống trùng được bảo đảm 7 ngày từ accepted; metadata giữ 180 ngày đến 180 ngày + 1 tháng theo accepted_at (DB01). Nếu còn metadata nhưng hết khóa, trả 409 `REFERENCE_RETIRED`, không tự gửi lại. Không được tái sử dụng reference.
 - Đầu vào mới có occurred_at quá 7 ngày trả 422 `STALE_REQUEST` (event: `STALE_EVENT`). Thời điểm vượt tương lai > 30s trả `INVALID_TIME`; 30s là đề xuất dung sai đồng hồ v1, cần NTP. Không sửa occurred_at để vượt kiểm tra replay. Sau khi metadata bị xóa không hứa chống trùng vô hạn.
 
 Network timeout/HTTP 5xx từ proxy không chứng minh gửi thất bại. Async: tra theo reference, rồi replay **nguyên body** nếu còn hạn. OTP: tra kết quả; không tự phát lại POST với deadline mới hoặc reference mới. GET 404 ngay sau timeout có thể xảy ra trước commit; tiếp tục đối chiếu trong cửa sổ của User. Mã OTP mới là quyết định nghiệp vụ của User.
@@ -198,7 +198,7 @@ Mỗi nhóm bắt buộc phải đạt ngưỡng bằng chứng của DEC-10; nh
 
 PROVIDER_ACCEPTED là bằng chứng provider nhận, không phải DELIVERED. In-app đạt ở AVAILABLE. Trạng thái đọc không nằm trong kết quả gửi. Bằng chứng đã ghi nhận không bị xóa khi có phản hồi xung đột; cần lưu delivery outcome bất lợi và reason_code để tra cứu, không che hard bounce. `UNKNOWN` quá 24h đóng xử lý, vẫn là UNKNOWN.
 
-`outcome` chỉ là kết quả chốt khi `processing_state` là CLOSED (quyết định 12/10/2026). Khi chưa CLOSED, PARTIAL nghĩa là đã đạt một phần và phần còn lại đang chạy, nên consumer xét `processing_state` trước. Hard bounce hoặc báo giao thất bại đến **sau** PROVIDER_ACCEPTED chuyển delivery sang FAILED (`reason_code` BOUNCE_HARD hoặc DELIVERY_FAILED), tính lại `outcome` và tăng `revision`; nếu đến sau DELIVERED thì delivery giữ DELIVERED và bằng chứng được đánh xung đột. Ma trận chuyển trạng thái đầy đủ ở tài liệu mô hình dữ liệu mục 4.4.
+`outcome` chỉ là kết quả chốt khi `processing_state` là CLOSED (quyết định 12/10/2026). Khi chưa CLOSED, PARTIAL nghĩa là đã đạt một phần và phần còn lại đang chạy, nên consumer xét `processing_state` trước. Hard bounce hoặc báo giao thất bại đến **sau** PROVIDER_ACCEPTED chuyển delivery sang FAILED (`reason_code` BOUNCE_HARD hoặc DELIVERY_FAILED), tính lại `outcome` và tăng `revision`; nếu đến sau DELIVERED thì delivery giữ DELIVERED và bằng chứng được đánh xung đột. Ma trận chuyển trạng thái đầy đủ ở [DATABASE v0.8 (LỊCH SỬ)](<../Notitek - DATABASE v0.8 (LỊCH SỬ).md>) mục 4.4 (mô hình v0.9 không chép lại ma trận); code hiện thực ở `internal/notification/domain/transition.go`.
 
 ## 9. Hủy và sự kiện đến muộn
 
@@ -261,6 +261,21 @@ Mặc định 50 request/s/source, burst theo SRS-P05; replay không tính quota
 
 Mã kết quả gửi như BLOCKED_QUOTA, CONTACT_BLOCKED, PROVIDER_REJECTED, PROVIDER_TIMEOUT, RECIPIENT_UNRESOLVED, RECIPIENT_LIMIT_EXCEEDED, SECRET_EXPIRED, SOURCE_INVALIDATED, EXPIRED nằm ở resource/delivery, không biến thành lỗi HTTP sau khi đã accepted. Lỗi nội bộ bất ngờ không trả stack trace hoặc secret.
 
+### 10.1. Chính sách dữ liệu và quyền vận hành đã chốt
+
+Theo DEC v1.9 mục 2.16: metadata gửi và inbox xóa cùng cây request, lấy accepted_at làm mốc; giữ từ 180 ngày đến 180 ngày + 1 tháng. Nội dung title/preview của inbox giữ/hiển thị 90 ngày từ created_at rồi làm NULL; nội dung và liên hệ không được kéo TTL theo partition.
+
+Liên hệ đầy đủ trong selector tạm (DB: recipients_spec) được dọn khi PLAN xong hoặc request đóng, đồng thời không giữ quá min(accepted_at + 24 giờ, send_deadline). Job dọn độc lập với tiến trình PLAN; hết hạn không lấy payload cũ để tiếp tục lập kế hoạch. contact_value đã chuyển vào delivery vẫn theo quy tắc che sau 30 ngày của DEC-09. API inbox/ops không trả nội dung đã hết hạn dù metadata còn.
+
+| Hành động | Quyền | Gán mặc định |
+|---|---|---|
+| Tạo/sửa/thử/kích hoạt/thu hồi kết nối | `notification.connection.manage` | Platform admin |
+| Sửa hạn mức ngày theo ngân sách được giao | `notification.quota.manage` | Platform admin |
+| Dừng/bật gửi theo loại và kênh | `notification.pause.manage` | Vận hành Notification |
+| Bật/tắt Push tùy chọn của Shop | `notification.shop_channel.manage` | Vận hành Notification |
+
+User/Authorization đăng ký/gán các quyền này qua CF-07. Tên trường JSON hiện hành không đổi theo tên cột DB v0.9; persistence ánh xạ theo từ điển mục 2/5. Thiết kế chuẩn hóa không tự thay hợp đồng GET sync đang xử lý.
+
 ## 11. Tích hợp từ outbox nguồn và mở rộng
 
 R1: Order ghi ý định thông báo của 10 mốc vào `outbox_events` cùng transaction đổi trạng thái; dispatcher outbox của Order (CF-04) gọi `POST /v1/notifications` với profile `order.*`. Phản hồi 2xx (202 mới, 200 replay) mới đánh dấu row đã gửi. 409 `IDEMPOTENCY_CONFLICT`, 4xx hợp đồng và 422 đưa row vào dead-letter để xử lý tay; timeout, 429 và 5xx retry **nguyên body** với cùng `source_ref` trong hạn. Các thông báo async của User (lời mời, kích hoạt, đổi mật khẩu, đổi định danh, nghỉ việc) cũng nên đi qua outbox của User thay cho gửi best-effort sau commit hiện nay.
@@ -286,7 +301,7 @@ Tên ở ranh giới tích hợp là `type` của Notitek; tên event nội bộ
 
 Phân kỳ sau khi có broker: event nghiệp vụ theo CloudEvents đi qua adapter vào cùng application service; reference phải trùng với reference REST cho cùng ý định, không phát một ý định qua hai đường với hai reference khác nhau.
 
-R1 chưa có broker nên consumer theo dõi kết quả bằng `GET` (polling theo `revision`). `notification.result_changed.v1` vẫn được ghi vào outbox của Notitek cùng transaction cập nhật revision để bật khi có broker; data tối thiểu: notification_id, source, source_ref, revision, processing_state, outcome, updated_at. Event id ổn định khi redelivery; consumer bỏ revision cũ và GET snapshot khi thiếu revision. Không có OTP/token/liên hệ đầy đủ. JSON Schema CloudEvents đầy đủ thuộc hợp đồng sự kiện tiếp theo, không được coi là đã bàn giao trong OpenAPI này.
+R1 theo DB05 (PO chốt 13/10/2026): consumer theo dõi kết quả bằng GET, polling theo revision. Mỗi thay đổi quan sát được cập nhật revision/updated_at trong cùng transaction; **không ghi notification.result_changed.v1 vào outbox R1**. outbox_job chỉ chứa PLAN/SEND nội bộ. Event kết quả, schema và consumer được thiết kế khi làm phân kỳ broker; không giữ các row event chưa sử dụng để chờ phát sau.
 
 Thêm module/loại: đăng ký owner, allowlist caller/scope, schema data/secrets/recipients, purpose, mode, policy kênh/mẫu/ngân sách, deadline, tiêu chí đạt và ví dụ; deploy registry trước khi bật producer. Không mở rộng envelope bằng cách nhận tùy ý field không khai báo. Envelope v1 từ chối field lạ; mở rộng server/schema trước khi client gửi field mới. Thay ý nghĩa hoặc thêm field bắt buộc của type cần type_version mới; thay phá vỡ envelope cần `/v2`. Consumer response phải bỏ qua field mới và xử lý an toàn giá trị chưa biết, không mặc định thành công.
 

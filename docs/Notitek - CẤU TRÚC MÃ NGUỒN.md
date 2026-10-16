@@ -1,6 +1,6 @@
 # Notitek - CẤU TRÚC MÃ NGUỒN
 
-**Phiên bản:** 0.3. **Ngày:** 12/10/2026. Bản 0.3: kết nối kênh, hạn mức, thiết lập Push của Shop và kill-switch chuyển sang DB và API vận hành (module `connection`, DEC-07 v1.7); credential mã hóa trong DB. Bản 0.2: thêm kiến trúc mã (mục 10), đồng thời và transaction (mục 11), nền tảng production (mục 12), bắt buộc tuân thủ bằng CI (mục 13). **Trạng thái:** Đề xuất để Tech Lead chốt thành ADR-08 trước M0. **Căn cứ:** ADR-01 (Go, RabbitMQ nội bộ, PostgreSQL, Redis), [DEC 1.6](<Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>), [API v1](api/README.md).
+**Phiên bản:** 0.4. **Ngày:** 13/10/2026. Bản 0.4: đồng bộ DB01–DB06 (DEC 1.9): mốc lưu/xóa, TTL selector 24 giờ, R1 chỉ polling kết quả và tách quyền vận hành. Bản 0.3: kết nối kênh, hạn mức, thiết lập Push của Shop và kill-switch chuyển sang DB và API vận hành (module `connection`, DEC-07 v1.7); credential mã hóa trong DB. Bản 0.2: thêm kiến trúc mã (mục 10), đồng thời và transaction (mục 11), nền tảng production (mục 12), bắt buộc tuân thủ bằng CI (mục 13). **Trạng thái:** Đề xuất để Tech Lead chốt thành ADR-08 trước M0. **Căn cứ:** ADR-01 (Go, RabbitMQ nội bộ, PostgreSQL, Redis), [DEC 1.6](<Notitek - QUYẾT ĐỊNH PO CHO CÁC DEC.md>), [API v1](api/README.md).
 
 Tài liệu quy định bố cục thư mục, ranh giới module, hướng phụ thuộc và cách mở rộng. Mục tiêu là khi User, Order hoặc module mới của SuperPlatform cần thêm thông báo, phần lớn thay đổi chỉ nằm ở cấu hình registry, không phải code lõi.
 
@@ -118,7 +118,7 @@ notification-spf/
 │   ├── webhook/                          # xác thực + chuẩn hóa callback từng provider → notification.RecordResult
 │   ├── ops/                              # API tra cứu vận hành, xem dữ liệu gốc có lý do + audit
 │   ├── audit/                            # ghi audit 2 năm (xem dữ liệu nhạy cảm, kill-switch, hủy/gửi lại)
-│   ├── retention/                        # che liên hệ 30 ngày, xóa In-app 180 ngày... (DEC-09)
+│   ├── retention/                        # selector ≤ 24h/hạn gửi; inbox nội dung 90d; metadata 180d + tối đa 1 tháng
 │   ├── outbox/                           # outbox chung: ghi trong transaction, relay claim/publish/confirm
 │   │   ├── application/
 │   │   └── adapter/{postgres,rabbitmq}/
@@ -279,6 +279,23 @@ platform không import bất kỳ module nghiệp vụ nào.
 
 Nguyên tắc chung: **mọi chuyển trạng thái là câu UPDATE có điều kiện trên trạng thái hiện tại**, khóa theo thứ tự cố định *request → delivery → attempt* để tránh deadlock, và không giữ transaction khi gọi mạng (provider, User, RabbitMQ).
 
+**Chính sách dữ liệu và quyền vận hành đã chốt:**
+
+Áp dụng DEC v1.9 mục 2.16, DB01–DB06; tên persistence theo từ điển v0.9 (56 bảng/260 trường), ánh xạ API/view ở mục 2 và đối chiếu 193 trường v0.8 ở mục 5. Các tên bảng v0.8/bản cũ trong mô tả luồng bên dưới phải được adapter ánh xạ, không tạo bảng đồng nghĩa. Ranh giới transaction/TTL v0.9 ở mục 7–8; [kế hoạch migration 3NF](<Notitek - THIẾT KẾ DATABASE 3NF VÀ AN TOÀN MIGRATION.md>) chưa được áp thành migration/persistence.
+
+- Metadata request và bản con, gồm inbox/evidence đã khớp, xóa cùng cây theo accepted_at; giữ 180 ngày đến 180 ngày + 1 tháng. Evidence chưa khớp dùng received_at, chuyển theo tuổi request khi khớp.
+- title/preview inbox làm NULL sau 90 ngày từ created_at; ID/trạng thái đọc/metadata còn tới lúc xóa request. Mọi đường đọc/làm mới cache áp dụng thời hạn hiển thị; job và backup/restore không hồi sinh nội dung đã dọn.
+- TTL selector liên hệ tối đa min(accepted_at + 24 giờ, send_deadline), đồng thời dọn sớm khi PLAN xong/request đóng. Quy tắc che contact_value sau 30 ngày và bí mật TTL 10 phút vẫn độc lập.
+
+| Hành động | Quyền | Gán mặc định |
+|---|---|---|
+| Tạo/sửa/thử/kích hoạt/thu hồi kết nối | `notification.connection.manage` | Platform admin |
+| Sửa hạn mức ngày theo ngân sách được giao | `notification.quota.manage` | Platform admin |
+| Dừng/bật gửi theo loại và kênh | `notification.pause.manage` | Vận hành Notification |
+| Bật/tắt Push tùy chọn của Shop | `notification.shop_channel.manage` | Vận hành Notification |
+
+Các quyền mới là đầu vào triển khai CF-07 của User/Authorization, không phải quyền đã cấp trên production.
+
 ### 11.1 Tiếp nhận và chống trùng
 
 | Bước | Cách làm |
@@ -292,10 +309,13 @@ Nguyên tắc chung: **mọi chuyển trạng thái là câu UPDATE có điều 
 
 ### 11.2 Lập kế hoạch người nhận
 
-Audience được mở rộng ở bước **plan** do worker chạy trước mọi lần gửi của yêu cầu đó: gọi `recipient` (ngoài transaction), rồi trong một transaction tạo delivery cho từng người/kênh và chuyển request sang `PLANNED`. Vượt 100 người nhận → dừng cả yêu cầu với `RECIPIENT_LIMIT_EXCEEDED` trước khi gửi bất kỳ kênh nào. Mất User → retry plan đến `send_deadline`, sau đó `RECIPIENT_UNRESOLVED`.
+Audience được mở rộng ở bước **plan** do worker chạy trước mọi lần gửi của yêu cầu đó: gọi `recipient` (ngoài transaction), rồi trong một transaction tạo delivery cho từng người/kênh và ghi planned_at; processing_state chỉ dùng PENDING/PROCESSING/CLOSED theo API, không lưu PLANNED. Vượt 100 người nhận → dừng cả yêu cầu với `RECIPIENT_LIMIT_EXCEEDED` trước khi gửi bất kỳ kênh nào. Mất User → retry plan đến `send_deadline`, sau đó `RECIPIENT_UNRESOLVED`.
+
+**Dọn liên hệ (DB04):** transaction PLAN thành công ghi planned_at và xóa phone/email khỏi recipients_spec sau khi đã tạo các delivery cần gửi. Transaction đóng request cũng dọn selector liên hệ. Job retention độc lập dọn trước min(accepted_at + 24 giờ, send_deadline), kể cả resolver/worker bị kẹt; sau hạn không dùng lại payload để resolve/gửi. Selector không bí mật/reference và metadata có thể còn để tra cứu.
 
 ### 11.3 Outbox và relay
 
+- **DB05:** outbox_job R1 chỉ chứa PLAN/SEND; thay đổi kết quả cập nhật revision/updated_at và nguồn polling GET. Không ghi sẵn RESULT_CHANGED hoặc notification.result_changed.v1.
 - `outbox_job` có `status`, `available_at`, `claimed_by`, `claim_until`, `attempts`, `headers` (mang trace context và correlation id).
 - Relay claim theo lô: `UPDATE … SET claimed_by, claim_until = now() + lease WHERE id IN (SELECT id … WHERE status = 'PENDING' AND available_at <= now() ORDER BY id LIMIT n FOR UPDATE SKIP LOCKED) RETURNING …`. Nhiều replica chạy song song không lấy trùng dòng.
 - Publish với **publisher confirms**; chỉ đánh dấu `PUBLISHED` sau khi broker xác nhận. Không xác nhận hoặc bị trả về (`mandatory`) → để lease hết hạn và claim lại.
