@@ -33,7 +33,7 @@ func dl(ch domain.Channel, r domain.Requirement, st domain.DeliveryState, inFlig
 
 func ev(k domain.EventKind, r domain.Reason) domain.Event { return domain.Event{Kind: k, Reason: r} }
 
-// TestTransitionMatrix checks every row of the R1 matrix (logical data model
+// TestTransitionMatrix checks every row of the R1 matrix (data model v0.8
 // §4.4) with its side effects.
 func TestTransitionMatrix(t *testing.T) {
 	cases := []struct {
@@ -69,7 +69,7 @@ func TestTransitionMatrix(t *testing.T) {
 		{"8 transient, no retry left", dl(eml, req, process, true), domain.Event{Kind: domain.EventAttemptTransient},
 			domain.Change{Row: 8, From: process, To: failed, Reason: domain.ReasonRetryExhausted, RefundQuota: true}},
 		{"9 rejected, alternative group", dl(zns, alt, process, true), ev(domain.EventAttemptRejected, domain.ReasonTemplateRejected),
-			domain.Change{Row: 9, From: process, To: failed, Reason: domain.ReasonTemplateRejected, RefundQuota: true, ActivateAlternatives: true}},
+			domain.Change{Row: 9, From: process, To: failed, Reason: domain.ReasonTemplateRejected, RefundQuota: true, ActivateFallback: true}},
 		{"9 rejected, required delivery", dl(sms, req, process, true), ev(domain.EventAttemptRejected, domain.ReasonInvalidDestination),
 			domain.Change{Row: 9, From: process, To: failed, Reason: domain.ReasonInvalidDestination, RefundQuota: true}},
 		{"10 provider timeout", dl(zns, alt, process, true), ev(domain.EventAttemptUnknown, domain.ReasonProviderTimeout),
@@ -138,7 +138,7 @@ func TestBounceAfterAcceptanceLowersTheOutcome(t *testing.T) {
 	if err != nil || after != domain.OutcomeFailed {
 		t.Errorf("after bounce: %s, %v; want FAILED", after, err)
 	}
-	if c.ActivateAlternatives || c.RefundQuota {
+	if c.ActivateFallback || c.RefundQuota {
 		t.Errorf("a bounce after acceptance neither falls back nor refunds: %+v", c)
 	}
 
@@ -164,7 +164,7 @@ func TestUnknownIsNeverResent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.RefundQuota || c.ScheduleRetry || c.ActivateAlternatives {
+	if c.RefundQuota || c.ScheduleRetry || c.ActivateFallback {
 		t.Errorf("UNKNOWN must not refund, retry or fall back: %+v", c)
 	}
 	if !c.StartReconcileWindow {
@@ -194,8 +194,39 @@ func TestUnknownIsNeverResent(t *testing.T) {
 
 	// Lookup says it was never sent: FAILED, still without fallback (row 13).
 	c, err = domain.Transition(zalo, ev(domain.EventEvidenceFailed, domain.ReasonProviderRejected))
-	if err != nil || c.To != failed || c.ActivateAlternatives {
+	if err != nil || c.To != failed || c.ActivateFallback {
 		t.Errorf("late negative evidence: %+v, %v", c, err)
+	}
+}
+
+// TestRevisionFollowsWhatTheAPIShows: the revision moves on every change the
+// API shows, including a new attempt or a scheduled retry in PROCESSING, and
+// not on evidence that changes nothing (data model v0.8 §4.4).
+func TestRevisionFollowsWhatTheAPIShows(t *testing.T) {
+	cases := []struct {
+		name string
+		d    domain.Delivery
+		e    domain.Event
+		want bool
+	}{
+		{"first claim", dl(sms, req, pending, false), ev(domain.EventClaimed, ""), true},
+		{"claim of a retry: attempt_count grows", dl(sms, req, process, false), ev(domain.EventClaimed, ""), true},
+		{"retry scheduled: RETRYING", dl(sms, req, process, true), domain.Event{Kind: domain.EventAttemptTransient, RetryAllowed: true}, true},
+		{"bounce after acceptance", dl(eml, req, accepted, false), ev(domain.EventEvidenceFailed, domain.ReasonBounceHard), true},
+		{"duplicate acceptance", dl(sms, req, accepted, false), ev(domain.EventEvidenceAccepted, ""), false},
+		{"conflict after DELIVERED", dl(eml, req, delivered, false), ev(domain.EventEvidenceFailed, domain.ReasonBounceHard), false},
+		{"reconcile window ends", dl(zns, alt, unknown, false), ev(domain.EventReconcileDeadline, ""), false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := domain.Transition(c.d, c.e)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.BumpsRevision() != c.want {
+				t.Errorf("BumpsRevision = %t, want %t (%+v)", got.BumpsRevision(), c.want, got)
+			}
+		})
 	}
 }
 
@@ -303,13 +334,13 @@ func checkInvariants(t *testing.T, d domain.Delivery, e domain.Event, c domain.C
 	if d.Channel != app && c.To == available {
 		t.Errorf("%s: AVAILABLE is for In-app only", where())
 	}
-	if c.ActivateAlternatives && (c.Row != 9 || d.Requirement != alt) {
+	if c.ActivateFallback && (c.Row != 9 || d.Requirement != alt) {
 		t.Errorf("%s: only a definite rejection of an ALTERNATIVE delivery falls back", where())
 	}
 	if c.RefundQuota && c.Row != 7 && c.Row != 8 && c.Row != 9 {
 		t.Errorf("%s: quota refunded although the message may have been sent", where())
 	}
-	if c.To == unknown && (c.RefundQuota || c.ScheduleRetry || c.ActivateAlternatives) {
+	if c.To == unknown && (c.RefundQuota || c.ScheduleRetry || c.ActivateFallback) {
 		t.Errorf("%s: UNKNOWN must not refund, retry or fall back", where())
 	}
 	if c.StartReconcileWindow != (c.Row == 10) {

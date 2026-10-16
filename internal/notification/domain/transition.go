@@ -12,14 +12,14 @@ var (
 	// evidence for an In-app one. The caller must not change the delivery.
 	ErrInvalidTransition = errors.New("domain: transition not allowed")
 	// ErrInvalidReason: the event carries a reason that the target state does
-	// not accept (logical data model §4.5).
+	// not accept (data model v0.8 §4.5).
 	ErrInvalidReason = errors.New("domain: reason not allowed")
 )
 
 // EventKind is something that happens to a delivery.
 type EventKind string
 
-// Events, with the rows of the transition matrix (logical data model §4.4)
+// Events, with the rows of the transition matrix (§4.4 of the data model v0.8)
 // they drive.
 const (
 	// EventClaimed: a worker claimed the delivery and every send check passed
@@ -107,10 +107,11 @@ type Change struct {
 	// RefundQuota: give back the unit granted at claim; the attempt certainly
 	// did not send (rows 7 to 9).
 	RefundQuota bool
-	// ActivateAlternatives: start the other ALTERNATIVE deliveries of the
-	// requirement group, for example SMS after ZNS (row 9 only).
-	ActivateAlternatives bool
-	// StartReconcileWindow: set reconcile_deadline_at once, to the end of the
+	// ActivateFallback: start the next fallback delivery of the ALTERNATIVE
+	// group that has not run yet, as the pinned policy orders them, for
+	// example SMS after ZNS. Never all alternatives at once (row 9 only).
+	ActivateFallback bool
+	// StartReconcileWindow: set reconcile_until once, to the end of the
 	// attempt plus 24 hours (row 10).
 	StartReconcileWindow bool
 }
@@ -118,13 +119,15 @@ type Change struct {
 // StateChanged reports whether the delivery state changes.
 func (c Change) StateChanged() bool { return c.From != c.To }
 
-// BumpsRevision reports whether the request revision must increase and its
-// outcome be recomputed: the state changed, or a retry was scheduled, which
-// the API shows as RETRYING.
-func (c Change) BumpsRevision() bool { return c.StateChanged() || c.ScheduleRetry }
+// BumpsRevision reports whether the request revision must increase: every
+// change the API shows, including a new attempt (attempt_count) or a
+// scheduled retry (next_attempt_at, shown as RETRYING) while the state stays.
+// The outcome is recomputed when the state changes.
+func (c Change) BumpsRevision() bool { return c.StateChanged() || c.StartAttempt || c.ScheduleRetry }
 
 // Transition applies an event to a delivery according to the R1 transition
-// matrix (ADR-04, logical data model §4.4). It is pure: the caller has done
+// matrix (ADR-04; §4.4 of the data model v0.8, kept in "DATABASE v0.8
+// (LỊCH SỬ)"). It is pure: the caller has done
 // the checks that need I/O (deadline, kill-switch, quota, retry policy) and
 // passes their result in the event.
 //
@@ -201,7 +204,7 @@ func Transition(d Delivery, e Event) (Change, error) {
 		}
 		c.Row, c.To, c.Reason = 9, StateFailed, e.Reason
 		c.RefundQuota = true
-		c.ActivateAlternatives = d.Requirement == Alternative
+		c.ActivateFallback = d.Requirement == Alternative
 
 	case EventAttemptUnknown:
 		if !inFlight {

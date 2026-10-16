@@ -1,7 +1,7 @@
 package domain
 
 // Reason explains why a delivery stopped, failed or is unknown
-// (logical data model §4.5). Values are stored as text; the closed lists below
+// (data model v0.8 §4.5). Values are stored as text; the closed lists below
 // are checked here, not by the database.
 type Reason string
 
